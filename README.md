@@ -1,1 +1,1 @@
-# nexchat-api
+# nexchat
