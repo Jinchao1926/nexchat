@@ -13,7 +13,7 @@ export const users = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     username: text('username').notNull().unique(),
-    password: text('password').notNull(),
+    passwordHash: text('password_hash').notNull(),
     nickname: text('nickname').notNull(),
     // Dynamic default value that generates a timestamp at insertion time
     createdAt: integer('created_at')
@@ -26,15 +26,11 @@ export const users = sqliteTable(
   (table) => [
     check(
       'username_length',
-      sql`length(${table.username}) between ${USERNAME_MIN_LENGTH} and ${USERNAME_MAX_LENGTH}`
-    ),
-    check(
-      'password_length',
-      sql`length(${table.password}) between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH}`
+      sql`length(${table.username}) between ${sql.raw(String(USERNAME_MIN_LENGTH))} and ${sql.raw(String(USERNAME_MAX_LENGTH))}`
     ),
     check(
       'nickname_length',
-      sql`length(${table.nickname}) between ${NICKNAME_MIN_LENGTH} and ${NICKNAME_MAX_LENGTH}`
+      sql`length(${table.nickname}) between ${sql.raw(String(NICKNAME_MIN_LENGTH))} and ${sql.raw(String(NICKNAME_MAX_LENGTH))}`
     ),
   ]
 );

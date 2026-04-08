@@ -14,8 +14,17 @@ const dbExports = ((dbModule as { default?: unknown }).default ?? dbModule) as {
 };
 const schemaExports = ((usersModule as { default?: unknown }).default ??
   usersModule) as {
-  users: { createdAt: { defaultFn?: () => number; default?: unknown } };
+  users: {
+    passwordHash?: unknown;
+    password?: unknown;
+    createdAt: { defaultFn?: () => number; default?: unknown };
+  };
 };
+
+test('users schema stores hashed passwords in passwordHash', () => {
+  assert.notEqual(schemaExports.users.passwordHash, undefined);
+  assert.equal(schemaExports.users.password, undefined);
+});
 
 test('getDatabasePath returns an absolute project-local sqlite path', () => {
   assert.equal(typeof dbExports.getDatabasePath, 'function');
@@ -63,6 +72,10 @@ test('createSqlite is available for the migration runner', () => {
 test('package scripts expose drizzle generate and migrate commands', () => {
   assert.equal(packageJson.scripts['db:generate'], 'drizzle-kit generate');
   assert.equal(
+    packageJson.scripts.test,
+    'node --import tsx --test "src/**/*.test.ts"'
+  );
+  assert.equal(
     packageJson.scripts['db:migrate'],
     'node --import tsx src/db/migrate.ts'
   );
@@ -71,4 +84,17 @@ test('package scripts expose drizzle generate and migrate commands', () => {
 test('drizzle migrations directory exists after generation', () => {
   assert.equal(typeof dbExports.getMigrationsPath, 'function');
   assert.equal(fs.existsSync(dbExports.getMigrationsPath!()), true);
+});
+
+test('generated sqlite migration inlines check-constraint bounds', () => {
+  assert.equal(typeof dbExports.getMigrationsPath, 'function');
+
+  const migrationPath = path.join(
+    dbExports.getMigrationsPath!(),
+    '0000_unusual_gideon.sql'
+  );
+  const migrationSql = fs.readFileSync(migrationPath, 'utf8');
+
+  assert.equal(migrationSql.includes('between ? and ?'), false);
+  assert.match(migrationSql, /between 3 and 20/);
 });
