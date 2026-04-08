@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 
-import { db } from '../../db';
-import { users } from '../../db/schema';
+import { db } from '@/db';
+import { users } from '@/db/schema';
+
 import { hashPassword } from './password';
 import type { CreateUserBody, UpdateUserBody } from './users.validators';
 
@@ -76,13 +77,13 @@ export async function createUser(
 function buildUserUpdate(input: UpdateUserBody) {
   const updateData: Partial<UserRecord> = {};
 
-    if (input.username !== undefined) {
-      updateData.username = input.username;
-    }
+  if (input.username !== undefined) {
+    updateData.username = input.username;
+  }
 
-    if (input.nickname !== undefined) {
-      updateData.nickname = input.nickname;
-    }
+  if (input.nickname !== undefined) {
+    updateData.nickname = input.nickname;
+  }
 
   if (input.password) {
     updateData.passwordHash = hashPassword(input.password);

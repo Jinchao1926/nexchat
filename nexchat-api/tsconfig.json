@@ -12,6 +12,14 @@
     "moduleResolution": "Bundler",
     "rootDir": "src",
     "outDir": "dist",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/api/*": ["./src/api/*"],
+      "@/db/*": ["./src/db/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/utils/*": ["./src/utils/*"]
+    },
     "types": [],
     // For nodejs:
     // "lib": ["esnext"],

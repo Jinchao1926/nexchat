@@ -1,4 +1,4 @@
-import { users } from '../../db/schema';
+import { users } from '@/db/schema';
 
 type UserRecord = typeof users.$inferSelect;
 

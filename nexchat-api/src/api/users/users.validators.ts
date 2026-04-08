@@ -9,7 +9,7 @@ import {
   PASSWORD_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
-} from '../../db/schema';
+} from '@/db/schema';
 
 export const createUserBodySchema = z.object({
   username: z.string().trim().min(USERNAME_MIN_LENGTH).max(USERNAME_MAX_LENGTH),

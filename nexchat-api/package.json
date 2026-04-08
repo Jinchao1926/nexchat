@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "build": "tsc",
+    "test": "node --import tsconfig-paths/register --import tsx --test \"src/**/*.test.ts\"",
+    "build": "tsc && tsc-alias",
     "format": "prettier --write .",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --import tsconfig-paths/register src/index.ts",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --import tsx src/db/migrate.ts"
@@ -22,6 +22,8 @@
     "@types/node": "^25.5.2",
     "drizzle-kit": "^0.31.10",
     "prettier": "^3.8.1",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   },
