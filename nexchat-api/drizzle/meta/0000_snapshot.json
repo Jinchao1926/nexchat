@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ee0831dd-2e1d-43ad-964b-79473d05596d",
+  "id": "626fda58-9c22-4f83-bbd0-8c20fd144f4d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "users": {
@@ -21,8 +21,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "password": {
-          "name": "password",
+        "password_hash": {
+          "name": "password_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -55,7 +55,16 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "username_length": {
+          "name": "username_length",
+          "value": "length(\"users\".\"username\") between 3 and 20"
+        },
+        "nickname_length": {
+          "name": "nickname_length",
+          "value": "length(\"users\".\"nickname\") between 3 and 20"
+        }
+      }
     }
   },
   "views": {},
