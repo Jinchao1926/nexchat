@@ -7,8 +7,7 @@ import {
 } from '@/validator';
 
 const createConversationBodySchema = z.object({
-  userId: z.int().positive(),
-  title: z.string(),
+  title: z.string().trim().min(2).max(20),
 });
 const updateConversationBodySchema = z.object({
   title: z.string().trim().min(2).max(20),

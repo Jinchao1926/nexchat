@@ -2,6 +2,7 @@
 /docs/superpowers/
 
 # nexchat-api
+/nexchat-api/docs/superpowers/
 
 /nexchat-api/dist/
 /nexchat-api/node_modules/
@@ -18,8 +19,9 @@
 
 
 # nexchat-flutter
-
+/nexchat-flutter/docs/superpowers/
 
 
 
 # nexchat-web
+/nexchat-web/docs/superpowers/

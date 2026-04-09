@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 
+import { getSessionUser, requireSession } from '@/middlewares/require-session';
+
 import {
   createConversation,
   deleteConversation,
@@ -15,19 +17,26 @@ import {
 
 const app = new Hono();
 
+app.use('*', requireSession);
+
 app.get('/', async (c) => {
-  // TODO: Extract from session middleware
-  const userId = 1;
+  const userId = getSessionUser(c).id;
   const conversations = listConversationsByUserId(userId);
+
   return c.json({ data: conversations });
 });
 
 app.get('/:id', conversationIdParamValidator, async (c) => {
   const { id } = c.req.valid('param');
+  const userId = getSessionUser(c).id;
   const conversation = getConversationById(id);
 
   if (!conversation) {
     return c.json({ message: 'Conversation not found' }, 404);
+  }
+
+  if (conversation.userId !== userId) {
+    return c.json({ message: 'Unauthorized' }, 403);
   }
 
   return c.json({ data: conversation });
@@ -35,8 +44,9 @@ app.get('/:id', conversationIdParamValidator, async (c) => {
 
 app.post('/', createConversationValidator, async (c) => {
   const data = c.req.valid('json');
+  const userId = getSessionUser(c).id;
+  const conversation = await createConversation(data, userId);
 
-  const conversation = await createConversation(data);
   if (!conversation) {
     return c.json({ message: 'Failed to create conversation' }, 400);
   }
@@ -51,10 +61,9 @@ app.patch(
   async (c) => {
     const { id } = c.req.valid('param');
     const data = c.req.valid('json');
-    const userId = 1; // TODO: Extract from session
-
-    // Verify ownership
+    const userId = getSessionUser(c).id;
     const existing = getConversationById(id);
+
     if (!existing) {
       return c.json({ message: 'Conversation not found' }, 404);
     }
@@ -74,10 +83,9 @@ app.patch(
 
 app.delete('/:id', conversationIdParamValidator, async (c) => {
   const { id } = c.req.valid('param');
-  const userId = 1; // TODO: Extract from session
-
-  // Verify ownership
+  const userId = getSessionUser(c).id;
   const existing = getConversationById(id);
+
   if (!existing) {
     return c.json({ message: 'Conversation not found' }, 404);
   }

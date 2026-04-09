@@ -11,7 +11,7 @@ import type {
 export type ConversationRecord = typeof conversation.$inferSelect;
 
 export function listConversationsByUserId(
-  uid: number,
+  uid: string,
   database: DatabaseClient = db
 ): ConversationRecord[] {
   return database
@@ -35,12 +35,13 @@ export function getConversationById(
 
 export async function createConversation(
   input: CreateConversationBody,
+  userId: string,
   database: DatabaseClient = db
 ): Promise<ConversationRecord | null> {
   const [created] = await database
     .insert(conversation)
     .values({
-      userId: input.userId,
+      userId,
       title: input.title,
     })
     .returning();

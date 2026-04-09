@@ -5,7 +5,7 @@ import { user } from './auth';
 
 export const conversation = sqliteTable('conversation', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
