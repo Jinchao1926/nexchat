@@ -16,4 +16,13 @@ describe('login route load', () => {
       } as never)
     ).rejects.toMatchObject({ location: '/app', status: 303 });
   });
+
+  it('returns normally when the auth server is unreachable', async () => {
+    await expect(
+      load({
+        fetch: vi.fn().mockRejectedValue(new TypeError('fetch failed')),
+        request: new Request('http://localhost:5173/')
+      } as never)
+    ).resolves.toEqual({});
+  });
 });
