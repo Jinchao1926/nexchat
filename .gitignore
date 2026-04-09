@@ -1,27 +1,2 @@
 /.worktrees/
 /docs/superpowers/
-
-# nexchat-api
-/nexchat-api/docs/superpowers/
-
-/nexchat-api/dist/
-/nexchat-api/node_modules/
-
-/nexchat-api/database.db
-/nexchat-api/database.db-shm
-/nexchat-api/database.db-wal
-
-/nexchat-api/drizzle.config.js
-/nexchat-api/drizzle.config.js.map
-/nexchat-api/drizzle.config.d.ts
-/nexchat-api/drizzle.config.d.ts.map
-
-
-
-# nexchat-flutter
-/nexchat-flutter/docs/superpowers/
-
-
-
-# nexchat-web
-/nexchat-web/docs/superpowers/
