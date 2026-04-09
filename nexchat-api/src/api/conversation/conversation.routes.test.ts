@@ -1,28 +1,24 @@
-// import assert from 'node:assert/strict';
-// import test from 'node:test';
+import assert from 'node:assert/strict';
+import test from 'node:test';
 
-// import app from '.';
+import app from '.';
 
-// test('POST /users rejects usernames longer than the schema limit', async () => {
-//   const response = await app.request('/', {
-//     method: 'POST',
-//     headers: {
-//       'content-type': 'application/json',
-//     },
-//     body: JSON.stringify({
-//       username: 'a'.repeat(21),
-//       password: 'secret123',
-//       nickname: 'tester',
-//     }),
-//   });
+test('GET /conversations requires a session', async () => {
+  const response = await app.request('/');
 
-//   assert.equal(response.status, 400);
+  assert.equal(response.status, 401);
+});
 
-//   const body = (await response.json()) as {
-//     message?: string;
-//     errors?: Array<{ path?: string[] }>;
-//   };
+test('POST /conversations requires a session', async () => {
+  const response = await app.request('/', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      title: 'Hello',
+    }),
+  });
 
-//   assert.equal(body.message, 'Invalid user payload');
-//   assert.deepEqual(body.errors?.[0]?.path, ['username']);
-// });
+  assert.equal(response.status, 401);
+});

@@ -1,11 +1,16 @@
 import { Hono } from 'hono';
 
-import { getSessionUser, requireSession } from '@/middlewares/require-session';
+import messageRoutes from '@/api/message';
+import { requireSession } from '@/middlewares/require-session';
 
+import {
+  getAuthorizedConversation,
+  getUserId,
+  isConversationResponse,
+} from './conversation-auth';
 import {
   createConversation,
   deleteConversation,
-  getConversationById,
   listConversationsByUserId,
   updateConversation,
 } from './conversation.service';
@@ -18,9 +23,10 @@ import {
 const app = new Hono();
 
 app.use('*', requireSession);
+app.route('/:id/messages', messageRoutes);
 
 app.get('/', async (c) => {
-  const userId = getSessionUser(c).id;
+  const userId = getUserId(c);
   const conversations = listConversationsByUserId(userId);
 
   return c.json({ data: conversations });
@@ -28,15 +34,10 @@ app.get('/', async (c) => {
 
 app.get('/:id', conversationIdParamValidator, async (c) => {
   const { id } = c.req.valid('param');
-  const userId = getSessionUser(c).id;
-  const conversation = getConversationById(id);
+  const conversation = getAuthorizedConversation(c, id);
 
-  if (!conversation) {
-    return c.json({ message: 'Conversation not found' }, 404);
-  }
-
-  if (conversation.userId !== userId) {
-    return c.json({ message: 'Unauthorized' }, 403);
+  if (isConversationResponse(conversation)) {
+    return conversation;
   }
 
   return c.json({ data: conversation });
@@ -44,7 +45,7 @@ app.get('/:id', conversationIdParamValidator, async (c) => {
 
 app.post('/', createConversationValidator, async (c) => {
   const data = c.req.valid('json');
-  const userId = getSessionUser(c).id;
+  const userId = getUserId(c);
   const conversation = await createConversation(data, userId);
 
   if (!conversation) {
@@ -61,15 +62,10 @@ app.patch(
   async (c) => {
     const { id } = c.req.valid('param');
     const data = c.req.valid('json');
-    const userId = getSessionUser(c).id;
-    const existing = getConversationById(id);
+    const existing = getAuthorizedConversation(c, id);
 
-    if (!existing) {
-      return c.json({ message: 'Conversation not found' }, 404);
-    }
-
-    if (existing.userId !== userId) {
-      return c.json({ message: 'Unauthorized' }, 403);
+    if (isConversationResponse(existing)) {
+      return existing;
     }
 
     const conversation = await updateConversation(id, data);
@@ -83,15 +79,10 @@ app.patch(
 
 app.delete('/:id', conversationIdParamValidator, async (c) => {
   const { id } = c.req.valid('param');
-  const userId = getSessionUser(c).id;
-  const existing = getConversationById(id);
+  const existing = getAuthorizedConversation(c, id);
 
-  if (!existing) {
-    return c.json({ message: 'Conversation not found' }, 404);
-  }
-
-  if (existing.userId !== userId) {
-    return c.json({ message: 'Unauthorized' }, 403);
+  if (isConversationResponse(existing)) {
+    return existing;
   }
 
   const deleted = await deleteConversation(id);
