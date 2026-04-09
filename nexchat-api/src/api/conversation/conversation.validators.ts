@@ -6,10 +6,12 @@ import {
   idParamSchema,
 } from '@/validator';
 
-const createConversationBodySchema = z.object({
-  title: z.string().trim().min(2).max(20),
-});
-const updateConversationBodySchema = z.object({
+export const createConversationBodySchema = z
+  .object({
+    title: z.string().trim().min(2).max(20),
+  })
+  .strict();
+export const updateConversationBodySchema = z.object({
   title: z.string().trim().min(2).max(20),
 });
 

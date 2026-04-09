@@ -5,9 +5,9 @@ import conversationRoutes from '@/api/conversation';
 import { auth } from '@/lib/auth';
 
 const app = new Hono();
-app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
+app.on(['POST', 'GET'], '/api/v1/auth/*', (c) => auth.handler(c.req.raw));
 
-app.route('/api/conversations', conversationRoutes);
+app.route('/api/v1/conversations', conversationRoutes);
 
 app.get('/', (c) => {
   return c.text('Hello from NexChat!');
