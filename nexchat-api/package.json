@@ -9,8 +9,8 @@
     "format": "prettier --write .",
     "dev": "tsx watch --import tsconfig-paths/register src/index.ts",
     "start": "node dist/index.js",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --import tsx src/db/migrate.ts"
+    "db:generate": "drizzle-kit generate && npx auth@latest generate --output src/db/schema/auth.ts",
+    "db:migrate": "node --import tsx src/db/migrate.ts && npx auth@latest migrate"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +30,7 @@
   "dependencies": {
     "@hono/node-server": "^1.19.13",
     "@hono/zod-validator": "^0.7.6",
+    "better-auth": "^1.6.0",
     "better-sqlite3": "^12.8.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.12",

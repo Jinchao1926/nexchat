@@ -1,10 +1,13 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 
-import userRoutes from '@/api/users';
+import conversationRoutes from '@/api/conversation';
+import { auth } from '@/lib/auth';
 
 const app = new Hono();
-app.route('/users', userRoutes);
+app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
+
+app.route('/api/conversations', conversationRoutes);
 
 app.get('/', (c) => {
   return c.text('Hello from NexChat!');

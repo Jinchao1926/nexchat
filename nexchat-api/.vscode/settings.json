@@ -15,5 +15,10 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  // 核心：允许终端从 .env 加载变量
+  "python.terminal.useEnvFile": true,
+  // 可选：指定 .env 路径（默认就是根目录 .env）
+  // "python.envFile": "${workspaceFolder}/.env",
+  "python.terminal.activateEnvironment": true
 }
