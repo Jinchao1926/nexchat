@@ -1,0 +1,15 @@
+/docs/superpowers/
+
+/dist/
+/node_modules/
+/build/
+
+/database.db
+/database.db-shm
+/database.db-wal
+
+/drizzle.config.js
+/drizzle.config.js.map
+/drizzle.config.d.ts
+/drizzle.config.d.ts.map
+
