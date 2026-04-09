@@ -44,6 +44,19 @@ describe('login page', () => {
       .toBeInTheDocument();
   });
 
+  it('shows authentication failures inside an alert', async () => {
+    signIn.mockResolvedValueOnce({ data: null, error: 'Wrong email or password' });
+
+    render(LoginPage, { data: {} });
+
+    await page.getByLabelText('Email').fill('user@example.com');
+    await page.getByLabelText('Password').fill('123456');
+    await page.getByRole('form', { name: 'Authentication form' }).getByRole('button', { name: 'Sign in' }).click();
+
+    await expect.element(page.getByRole('alert')).toBeInTheDocument();
+    await expect.element(page.getByText('Wrong email or password')).toBeInTheDocument();
+  });
+
   it('submits sign-in credentials after validation passes', async () => {
     render(LoginPage, { data: {} });
 

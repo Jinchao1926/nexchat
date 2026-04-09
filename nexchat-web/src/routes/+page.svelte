@@ -3,11 +3,10 @@
   import ArrowRight from '@lucide/svelte/icons/arrow-right';
   import MessageCircle from '@lucide/svelte/icons/message-circle-more';
   import Sparkles from '@lucide/svelte/icons/sparkles';
+  import { Alert, Button, ButtonGroup, Card, Heading, Input, Label, P } from 'flowbite-svelte';
 
   import { signIn, signUp } from '$lib/auth/api';
   import { validateAuthInput } from '$lib/auth/validators';
-  import Button from '$lib/components/ui/button.svelte';
-  import Input from '$lib/components/ui/input.svelte';
 
   type AuthMode = 'sign-in' | 'sign-up';
   type PageData = Record<string, never>;
@@ -30,6 +29,17 @@
   );
   const submitLabel = $derived(mode === 'sign-in' ? 'Sign in' : 'Create account');
   const pendingLabel = $derived(mode === 'sign-in' ? 'Signing in…' : 'Creating account…');
+  const helperText = $derived(
+    mode === 'sign-in'
+      ? 'New here? Switch to sign up to create your workspace access.'
+      : 'Already have an account? Switch back to sign in.'
+  );
+  const highlights = [
+    {
+      title: 'Conversation-first workspace',
+      description: 'Clean threads, fast auth, zero clutter.'
+    }
+  ] as const;
 
   async function handleSubmit() {
     errors = validateAuthInput({ email, password });
@@ -67,63 +77,65 @@
   <div class="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-40"></div>
 
   <div class="relative grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-    <div class="hidden rounded-[28px] border border-white/60 bg-white/70 p-10 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur xl:flex xl:flex-col xl:justify-between">
+    <Card class="hidden border-white/60 bg-white/70 p-10 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur xl:flex xl:flex-col xl:justify-between">
       <div class="space-y-6">
         <div class="inline-flex w-fit items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
           <Sparkles class="size-4" />
           AI-native team chat
         </div>
         <div class="space-y-4">
-          <h1 class="max-w-lg text-4xl font-semibold tracking-tight text-balance text-slate-950">
+          <Heading tag="h1" class="max-w-lg text-4xl font-semibold tracking-tight text-balance text-slate-950">
             Messaging that feels focused, fast, and ready for real work.
-          </h1>
-          <p class="max-w-md text-base leading-7 text-slate-600">
+          </Heading>
+          <P class="max-w-md text-base leading-7 text-slate-600">
             NexChat keeps sign-in simple while giving your team a calm, polished place to
             collaborate.
-          </p>
+          </P>
         </div>
       </div>
 
       <div class="grid gap-4">
-        <div class="rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
-          <div class="flex items-center gap-3">
-            <div class="rounded-xl bg-primary/10 p-2 text-primary">
-              <MessageCircle class="size-5" />
+        {#each highlights as highlight}
+          <Card class="border-slate-200/80 bg-white/80 p-5 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="rounded-xl bg-primary/10 p-2 text-primary">
+                <MessageCircle class="size-5" />
+              </div>
+              <div>
+                <Heading tag="h2" class="text-base font-medium text-slate-900">{highlight.title}</Heading>
+                <P class="text-sm text-slate-500">{highlight.description}</P>
+              </div>
             </div>
-            <div>
-              <p class="font-medium text-slate-900">Conversation-first workspace</p>
-              <p class="text-sm text-slate-500">Clean threads, fast auth, zero clutter.</p>
-            </div>
-          </div>
-        </div>
+          </Card>
+        {/each}
       </div>
-    </div>
+    </Card>
 
-    <div class="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
+    <Card class="border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
       <div class="mb-8 flex items-center gap-3">
         <div class="rounded-2xl bg-primary/10 p-2 text-primary">
           <MessageCircle class="size-5" />
         </div>
         <div>
-          <p class="text-sm font-medium text-slate-500">NexChat</p>
-          <p class="text-sm text-slate-400">Secure workspace access</p>
+          <P class="text-sm font-medium text-slate-500">NexChat</P>
+          <P class="text-sm text-slate-400">Secure workspace access</P>
         </div>
       </div>
 
       <div class="space-y-6">
         <div class="space-y-2">
-          <h2 class="text-3xl font-semibold tracking-tight text-slate-950">{title}</h2>
-          <p class="text-sm leading-6 text-muted-foreground">{description}</p>
+          <Heading tag="h2" class="text-3xl font-semibold tracking-tight text-slate-950">{title}</Heading>
+          <P class="text-sm leading-6 text-muted-foreground">{description}</P>
         </div>
 
-        <div
+        <ButtonGroup
           role="group"
           class="grid grid-cols-2 rounded-xl border border-border bg-muted/60 p-1"
           aria-label="Authentication mode"
         >
-          <button
-            type="button"
-            class={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          <Button
+            color={mode === 'sign-in' ? 'light' : 'alternative'}
+            class={`border-0 text-sm transition-colors ${
               mode === 'sign-in'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -132,10 +144,10 @@
             aria-pressed={mode === 'sign-in'}
           >
             Sign in
-          </button>
-          <button
-            type="button"
-            class={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          </Button>
+          <Button
+            color={mode === 'sign-up' ? 'light' : 'alternative'}
+            class={`border-0 text-sm transition-colors ${
               mode === 'sign-up'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -144,15 +156,13 @@
             aria-pressed={mode === 'sign-up'}
           >
             Sign up
-          </button>
-        </div>
+          </Button>
+        </ButtonGroup>
 
         {#if message}
-          <div
-            class="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
-          >
+          <Alert color="red" class="text-sm" rounded>
             {message}
-          </div>
+          </Alert>
         {/if}
 
         <form
@@ -164,33 +174,27 @@
           }}
         >
           {#if mode === 'sign-up'}
-            <label class="grid gap-2">
-              <span class="text-sm font-medium text-slate-700">Display name</span>
+            <Label class="grid gap-2 text-sm font-medium text-slate-700">
+              <span>Display name</span>
               <Input
-                value={name}
+                bind:value={name}
                 type="text"
                 aria-label="Display name"
                 placeholder="How should we call you?"
                 autocomplete="nickname"
-                oninput={(event) => {
-                  name = event.currentTarget.value;
-                }}
               />
-            </label>
+            </Label>
           {/if}
 
           <div class="grid gap-2">
-            <label class="text-sm font-medium text-slate-700" for="email">Email</label>
+            <Label class="text-sm font-medium text-slate-700" for="email">Email</Label>
             <Input
               id="email"
-              value={email}
+              bind:value={email}
               type="email"
               aria-label="Email"
               placeholder="you@company.com"
               autocomplete="email"
-              oninput={(event) => {
-                email = event.currentTarget.value;
-              }}
             />
             {#if errors.email}
               <p class="text-sm text-destructive">{errors.email}</p>
@@ -198,17 +202,14 @@
           </div>
 
           <div class="grid gap-2">
-            <label class="text-sm font-medium text-slate-700" for="password">Password</label>
+            <Label class="text-sm font-medium text-slate-700" for="password">Password</Label>
             <Input
               id="password"
-              value={password}
+              bind:value={password}
               type="password"
               aria-label="Password"
               placeholder="At least 6 characters"
               autocomplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-              oninput={(event) => {
-                password = event.currentTarget.value;
-              }}
             />
             {#if errors.password}
               <p class="text-sm text-destructive">{errors.password}</p>
@@ -223,14 +224,8 @@
           </Button>
         </form>
 
-        <p class="text-center text-sm text-muted-foreground">
-          {#if mode === 'sign-in'}
-            New here? Switch to sign up to create your workspace access.
-          {:else}
-            Already have an account? Switch back to sign in.
-          {/if}
-        </p>
+        <P class="text-center text-sm text-muted-foreground">{helperText}</P>
       </div>
-    </div>
+    </Card>
   </div>
 </section>
