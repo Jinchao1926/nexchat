@@ -3,19 +3,23 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "test": "node --import tsconfig-paths/register --import tsx --test \"src/**/*.test.ts\"",
+    "test": "node --import tsconfig-paths/register.js --import tsx --test \"src/**/*.test.ts\"",
     "build": "tsc && tsc-alias",
     "format": "prettier --write .",
-    "dev": "tsx watch --import tsconfig-paths/register src/index.ts",
+    "dev": "tsx watch --import tsconfig-paths/register.js src/index.ts",
     "start": "node dist/index.js",
-    "db:generate": "drizzle-kit generate && npx auth@latest generate --output src/db/schema/auth.ts",
-    "db:migrate": "node --import tsx src/db/migrate.ts && npx auth@latest migrate"
+    "db:generate": "drizzle-kit generate && pnpm dlx auth@latest generate --output src/db/schema/auth.ts",
+    "db:migrate": "node --import tsx src/db/migrate.ts && pnpm dlx auth@latest migrate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "esbuild"]
+  },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/better-sqlite3": "^7.6.13",
