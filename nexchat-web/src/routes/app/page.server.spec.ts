@@ -11,4 +11,13 @@ describe('/app route load', () => {
       } as never)
     ).rejects.toMatchObject({ location: '/', status: 303 });
   });
+
+  it('redirects to / when the auth server is unreachable', async () => {
+    await expect(
+      load({
+        fetch: vi.fn().mockRejectedValue(new TypeError('fetch failed')),
+        request: new Request('http://localhost:5173/app')
+      } as never)
+    ).rejects.toMatchObject({ location: '/', status: 303 });
+  });
 });
