@@ -21,3 +21,5 @@ export function createSqlite(
 
 const sqlite = createSqlite();
 export const db = drizzle(sqlite, { schema });
+
+export type DatabaseClient = typeof db;
