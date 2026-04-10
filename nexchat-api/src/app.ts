@@ -3,11 +3,10 @@ import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from 'hono/cors';
 
 import conversationRoutes from '@/api/conversation';
+import { API_PREFIX, APP_BASE_URL, AUTH_PREFIX, WEB_APP_ORIGIN } from '@/config';
 import { auth } from '@/lib/auth';
 
 const app = new OpenAPIHono();
-const API_PREFIX = '/api/v1';
-const AUTH_PREFIX = `${API_PREFIX}/auth`;
 
 type AuthDocument = Awaited<ReturnType<typeof auth.api.generateOpenAPISchema>>;
 type OpenApiTag = { name: string; description?: string };
@@ -20,7 +19,7 @@ const OPENAPI_INFO = {
 
 const OPENAPI_SERVERS = [
   {
-    url: 'http://localhost:6001',
+    url: APP_BASE_URL,
     description: 'Local development server',
   },
 ];
@@ -42,7 +41,7 @@ const OPENAPI_SECURITY_SCHEMES = {
 };
 
 const AUTH_CORS_CONFIG = {
-  origin: 'http://localhost:5173',
+  origin: WEB_APP_ORIGIN,
   allowMethods: ['GET', 'POST', 'OPTIONS'],
   allowHeaders: ['Content-Type'],
   credentials: true,
@@ -51,7 +50,7 @@ const AUTH_CORS_CONFIG = {
 function normalizeAuthDocument(authDocument: AuthDocument): AuthDocument {
   const normalizedPaths = Object.fromEntries(
     Object.entries(authDocument.paths ?? {}).map(([path, pathItem]) => [
-      `${AUTH_PREFIX}${path}`,
+      path.startsWith(AUTH_PREFIX) ? path : `${AUTH_PREFIX}${path}`,
       Object.fromEntries(
         Object.entries(pathItem ?? {}).map(([method, operation]) => [
           method,
