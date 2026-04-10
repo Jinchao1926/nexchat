@@ -1,26 +1,33 @@
 import { z } from '@hono/zod-openapi';
 
 export const conversationIdParamsSchema = z.object({
-  id: z.coerce.number().int().positive().openapi({
-    param: {
-      name: 'id',
-      in: 'path',
-    },
-    example: 1,
-  }),
-});
-
-export const conversationMessageParamsSchema = conversationIdParamsSchema.extend(
-  {
-    messageId: z.coerce.number().int().positive().openapi({
+  id: z.coerce
+    .number()
+    .int()
+    .positive()
+    .openapi({
       param: {
-        name: 'messageId',
+        name: 'id',
         in: 'path',
       },
       example: 1,
     }),
-  }
-);
+});
+
+export const conversationMessageParamsSchema =
+  conversationIdParamsSchema.extend({
+    messageId: z.coerce
+      .number()
+      .int()
+      .positive()
+      .openapi({
+        param: {
+          name: 'messageId',
+          in: 'path',
+        },
+        example: 1,
+      }),
+  });
 
 export const createMessageBodySchema = z
   .object({

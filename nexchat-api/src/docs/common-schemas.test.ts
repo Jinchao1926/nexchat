@@ -9,8 +9,14 @@ import {
 } from './common-schemas';
 
 test('common docs schemas export shared response primitives', () => {
-  assert.equal(errorResponseSchema.safeParse({ message: 'nope' }).success, true);
-  assert.equal(okMessageResponseSchema.safeParse({ message: 'ok' }).success, true);
+  assert.equal(
+    errorResponseSchema.safeParse({ message: 'nope' }).success,
+    true
+  );
+  assert.equal(
+    okMessageResponseSchema.safeParse({ message: 'ok' }).success,
+    true
+  );
   assert.equal(
     badRequestResponseSchema.safeParse({ message: 'invalid' }).success,
     true

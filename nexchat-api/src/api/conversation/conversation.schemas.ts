@@ -1,8 +1,7 @@
 import { z } from '@hono/zod-openapi';
 
 export const conversationIdParamsSchema = z.object({
-  id: z
-    .coerce
+  id: z.coerce
     .number()
     .int()
     .positive()

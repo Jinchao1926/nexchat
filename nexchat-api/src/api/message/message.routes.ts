@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
+import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
 
 import {
   badRequestResponseSchema,
@@ -9,22 +9,22 @@ import {
 import { requireSession } from '@/middlewares/require-session';
 
 import {
-  conversationIdParamsSchema,
-  conversationMessageParamsSchema,
-  createMessageBodySchema,
-  updateMessageBodySchema,
-} from './message.schemas';
-import {
-  messageSingleResponseSchema,
-  messagesListResponseSchema,
-} from './message.responses';
-import {
   createMessageHandler,
   deleteMessageHandler,
   getMessageHandler,
   listMessagesHandler,
   updateMessageHandler,
 } from './message.handlers';
+import {
+  messageSingleResponseSchema,
+  messagesListResponseSchema,
+} from './message.responses';
+import {
+  conversationIdParamsSchema,
+  conversationMessageParamsSchema,
+  createMessageBodySchema,
+  updateMessageBodySchema,
+} from './message.schemas';
 
 const app = new OpenAPIHono();
 

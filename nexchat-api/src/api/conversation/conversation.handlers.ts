@@ -5,17 +5,17 @@ import {
   getUserId,
   isConversationResponse,
 } from './conversation-auth';
+import type {
+  ConversationIdParams,
+  CreateConversationBody,
+  UpdateConversationBody,
+} from './conversation.schemas';
 import {
   createConversation,
   deleteConversation,
   listConversationsByUserId,
   updateConversation,
 } from './conversation.service';
-import type {
-  ConversationIdParams,
-  CreateConversationBody,
-  UpdateConversationBody,
-} from './conversation.schemas';
 
 function toConversationResponse(conversation: {
   id: number;

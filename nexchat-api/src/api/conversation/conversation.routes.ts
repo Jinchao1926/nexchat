@@ -10,6 +10,13 @@ import {
 import { requireSession } from '@/middlewares/require-session';
 
 import {
+  createConversationHandler,
+  deleteConversationHandler,
+  getConversationHandler,
+  listConversationsHandler,
+  updateConversationHandler,
+} from './conversation.handlers';
+import {
   conversationSingleResponseSchema,
   conversationsListResponseSchema,
 } from './conversation.responses';
@@ -18,13 +25,6 @@ import {
   createConversationBodySchema,
   updateConversationBodySchema,
 } from './conversation.schemas';
-import {
-  createConversationHandler,
-  deleteConversationHandler,
-  getConversationHandler,
-  listConversationsHandler,
-  updateConversationHandler,
-} from './conversation.handlers';
 
 const app = new OpenAPIHono();
 

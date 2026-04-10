@@ -5,6 +5,11 @@ import {
   isConversationResponse,
 } from '@/api/conversation/conversation-auth';
 
+import type {
+  ConversationMessageParams,
+  CreateMessageBody,
+  UpdateMessageBody,
+} from './message.schemas';
 import {
   createMessage,
   deleteMessage,
@@ -12,11 +17,6 @@ import {
   listMessagesByConversationId,
   updateMessage,
 } from './message.service';
-import type {
-  ConversationMessageParams,
-  CreateMessageBody,
-  UpdateMessageBody,
-} from './message.schemas';
 
 function getConversationId(c: Context) {
   return Number(c.req.param('id'));

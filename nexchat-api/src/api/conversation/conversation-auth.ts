@@ -2,7 +2,10 @@ import type { Context } from 'hono';
 
 import { getSessionUser } from '@/middlewares/require-session';
 
-import { getConversationById, type ConversationRecord } from './conversation.service';
+import {
+  type ConversationRecord,
+  getConversationById,
+} from './conversation.service';
 
 export function getUserId(c: Context) {
   return getSessionUser(c).id;
