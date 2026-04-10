@@ -3,10 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import { type DatabaseClient, db } from '@/db';
 import { message } from '@/db/schema';
 
-import type {
-  CreateMessageBody,
-  UpdateMessageBody,
-} from './message.validators';
+import type { CreateMessageBody, UpdateMessageBody } from './message.schemas';
 
 export type MessageRecord = typeof message.$inferSelect;
 type CreateMessageInput = CreateMessageBody & {

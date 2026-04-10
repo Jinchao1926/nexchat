@@ -1,5 +1,6 @@
-import { defineConfig } from 'drizzle-kit';
 import { fileURLToPath } from 'node:url';
+
+import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
   schema: './src/db/schema/index.ts',
