@@ -1,96 +1,280 @@
-import { Hono } from 'hono';
+import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
 
 import messageRoutes from '@/api/message';
+import {
+  badRequestResponseSchema,
+  errorResponseSchema,
+  okMessageResponseSchema,
+  sessionCookieSecurity,
+} from '@/docs/common-schemas';
 import { requireSession } from '@/middlewares/require-session';
 
 import {
-  getAuthorizedConversation,
-  getUserId,
-  isConversationResponse,
-} from './conversation-auth';
+  conversationSingleResponseSchema,
+  conversationsListResponseSchema,
+} from './conversation.responses';
 import {
-  createConversation,
-  deleteConversation,
-  listConversationsByUserId,
-  updateConversation,
-} from './conversation.service';
+  conversationIdParamsSchema,
+  createConversationBodySchema,
+  updateConversationBodySchema,
+} from './conversation.schemas';
 import {
-  conversationIdParamValidator,
-  createConversationValidator,
-  updateConversationValidator,
-} from './conversation.validators';
+  createConversationHandler,
+  deleteConversationHandler,
+  getConversationHandler,
+  listConversationsHandler,
+  updateConversationHandler,
+} from './conversation.handlers';
 
-const app = new Hono();
+const app = new OpenAPIHono();
 
-app.use('*', requireSession);
+const listConversationsRoute = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Conversations'],
+  summary: 'List conversations',
+  security: sessionCookieSecurity,
+  middleware: [requireSession],
+  responses: {
+    200: {
+      description: 'Conversations for the signed-in user',
+      content: {
+        'application/json': {
+          schema: conversationsListResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const getConversationRoute = createRoute({
+  method: 'get',
+  path: '/{id}',
+  tags: ['Conversations'],
+  summary: 'Get a conversation',
+  security: sessionCookieSecurity,
+  middleware: [requireSession],
+  request: {
+    params: conversationIdParamsSchema,
+  },
+  responses: {
+    200: {
+      description: 'Conversation',
+      content: {
+        'application/json': {
+          schema: conversationSingleResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: 'Invalid conversation id',
+      content: {
+        'application/json': {
+          schema: badRequestResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: 'Forbidden',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: 'Conversation not found',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const createConversationRoute = createRoute({
+  method: 'post',
+  path: '/',
+  tags: ['Conversations'],
+  summary: 'Create a conversation',
+  security: sessionCookieSecurity,
+  middleware: [requireSession],
+  request: {
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: createConversationBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Created conversation',
+      content: {
+        'application/json': {
+          schema: conversationSingleResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: 'Invalid conversation payload',
+      content: {
+        'application/json': {
+          schema: badRequestResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const updateConversationRoute = createRoute({
+  method: 'patch',
+  path: '/{id}',
+  tags: ['Conversations'],
+  summary: 'Update a conversation',
+  security: sessionCookieSecurity,
+  middleware: [requireSession],
+  request: {
+    params: conversationIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: updateConversationBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Updated conversation',
+      content: {
+        'application/json': {
+          schema: conversationSingleResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: 'Invalid request',
+      content: {
+        'application/json': {
+          schema: badRequestResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: 'Forbidden',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: 'Conversation not found',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const deleteConversationRoute = createRoute({
+  method: 'delete',
+  path: '/{id}',
+  tags: ['Conversations'],
+  summary: 'Delete a conversation',
+  security: sessionCookieSecurity,
+  middleware: [requireSession],
+  request: {
+    params: conversationIdParamsSchema,
+  },
+  responses: {
+    200: {
+      description: 'Deleted conversation',
+      content: {
+        'application/json': {
+          schema: okMessageResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: 'Invalid conversation id',
+      content: {
+        'application/json': {
+          schema: badRequestResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: 'Forbidden',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: 'Conversation not found',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 app.route('/:id/messages', messageRoutes);
-
-app.get('/', async (c) => {
-  const userId = getUserId(c);
-  const conversations = listConversationsByUserId(userId);
-
-  return c.json({ data: conversations });
-});
-
-app.get('/:id', conversationIdParamValidator, async (c) => {
-  const { id } = c.req.valid('param');
-  const conversation = getAuthorizedConversation(c, id);
-
-  if (isConversationResponse(conversation)) {
-    return conversation;
-  }
-
-  return c.json({ data: conversation });
-});
-
-app.post('/', createConversationValidator, async (c) => {
-  const data = c.req.valid('json');
-  const userId = getUserId(c);
-  const conversation = await createConversation(data, userId);
-
-  if (!conversation) {
-    return c.json({ message: 'Failed to create conversation' }, 400);
-  }
-
-  return c.json({ data: conversation }, 201);
-});
-
-app.patch(
-  '/:id',
-  conversationIdParamValidator,
-  updateConversationValidator,
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const data = c.req.valid('json');
-    const existing = getAuthorizedConversation(c, id);
-
-    if (isConversationResponse(existing)) {
-      return existing;
-    }
-
-    const conversation = await updateConversation(id, data);
-    if (!conversation) {
-      return c.json({ message: 'Failed to update conversation' }, 400);
-    }
-
-    return c.json({ data: conversation });
-  }
-);
-
-app.delete('/:id', conversationIdParamValidator, async (c) => {
-  const { id } = c.req.valid('param');
-  const existing = getAuthorizedConversation(c, id);
-
-  if (isConversationResponse(existing)) {
-    return existing;
-  }
-
-  const deleted = await deleteConversation(id);
-  if (!deleted) {
-    return c.json({ message: 'Failed to delete conversation' }, 400);
-  }
-
-  return c.json({ message: 'ok' });
-});
+app.openapi(listConversationsRoute, listConversationsHandler);
+app.openapi(getConversationRoute, getConversationHandler);
+app.openapi(createConversationRoute, createConversationHandler);
+app.openapi(updateConversationRoute, updateConversationHandler);
+app.openapi(deleteConversationRoute, deleteConversationHandler);
 
 export default app;

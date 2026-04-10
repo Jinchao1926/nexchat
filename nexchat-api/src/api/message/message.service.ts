@@ -6,7 +6,7 @@ import { message } from '@/db/schema';
 import type {
   CreateMessageBody,
   UpdateMessageBody,
-} from './message.validators';
+} from './message.schemas';
 
 export type MessageRecord = typeof message.$inferSelect;
 type CreateMessageInput = CreateMessageBody & {

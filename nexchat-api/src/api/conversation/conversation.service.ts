@@ -6,7 +6,7 @@ import { conversation } from '@/db/schema';
 import type {
   CreateConversationBody,
   UpdateConversationBody,
-} from './conversation.validators';
+} from './conversation.schemas';
 
 export type ConversationRecord = typeof conversation.$inferSelect;
 

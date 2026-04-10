@@ -1,15 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { idParamSchema } from '@/validator/index';
-
 import {
+  conversationIdParamsSchema,
   createConversationBodySchema,
   updateConversationBodySchema,
-} from './conversation.validators';
+} from './conversation.schemas';
 
-test('conversation id param accepts positive integers', () => {
-  const result = idParamSchema.safeParse({
+test('conversationIdParamsSchema accepts positive integer route params', () => {
+  const result = conversationIdParamsSchema.safeParse({
     id: '42',
   });
 
