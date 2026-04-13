@@ -46,16 +46,26 @@
     return trimmed.slice(0, 20);
   }
 
+  function resetComposerState() {
+    messageDraft = '';
+    messageSendError = null;
+  }
+
+  function resetMessagesState() {
+    messages = [];
+    messagesLoading = false;
+    messagesError = null;
+  }
+
   async function refreshConversations(
     nextSelectedConversationId: string | null = selectedConversationId
   ) {
     const result = await getConversations();
 
-    if (result.error) {
-      return;
+    if (!result.error) {
+      conversations = result.data;
     }
 
-    conversations = result.data;
     selectedConversationId = nextSelectedConversationId;
   }
 
@@ -66,10 +76,8 @@
 
   async function handleConversationSelect(conversationId: string) {
     selectedConversationId = conversationId;
-    messages = [];
-    messagesError = null;
-    messageDraft = '';
-    messageSendError = null;
+    resetMessagesState();
+    resetComposerState();
     messagesLoading = true;
 
     lastRequestedConversationId = conversationId;
@@ -92,11 +100,30 @@
 
   function handleNewConversationStart() {
     selectedConversationId = null;
-    messages = [];
-    messagesLoading = false;
-    messagesError = null;
-    messageDraft = '';
-    messageSendError = null;
+    resetMessagesState();
+    resetComposerState();
+  }
+
+  async function createDraftMessage(conversationId: string, content: string) {
+    return createConversationMessage(conversationId, { role: 'user', content });
+  }
+
+  async function createConversationForDraft(content: string) {
+    const conversationResult = await createConversation({
+      title: deriveConversationTitle(content)
+    });
+
+    if (conversationResult.error || !conversationResult.data) {
+      return {
+        conversationId: null,
+        error: conversationResult.error ?? 'Failed to create conversation'
+      };
+    }
+
+    return {
+      conversationId: conversationResult.data.id,
+      error: null
+    };
   }
 
   async function handleDraftSend() {
@@ -110,20 +137,20 @@
     messageSendError = null;
 
     let activeConversationId = selectedConversationId;
+    let shouldRefreshConversations = false;
 
     if (!activeConversationId) {
-      const conversationResult = await createConversation({
-        title: deriveConversationTitle(content)
-      });
+      const creation = await createConversationForDraft(content);
 
-      if (conversationResult.error || !conversationResult.data) {
+      if (creation.error || !creation.conversationId) {
         messageSending = false;
-        messageSendError = conversationResult.error ?? 'Failed to create conversation';
+        messageSendError = creation.error;
         return;
       }
 
-      activeConversationId = conversationResult.data.id;
-      await refreshConversations(activeConversationId);
+      activeConversationId = creation.conversationId;
+      selectedConversationId = activeConversationId;
+      shouldRefreshConversations = true;
     }
 
     if (!activeConversationId) {
@@ -131,7 +158,10 @@
       return;
     }
 
-    const result = await createConversationMessage(activeConversationId, { role: 'user', content });
+    const [result] = await Promise.all([
+      createDraftMessage(activeConversationId, content),
+      shouldRefreshConversations ? refreshConversations(activeConversationId) : Promise.resolve()
+    ]);
 
     messageSending = false;
 

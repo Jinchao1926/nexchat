@@ -39,6 +39,17 @@ vi.mock('$lib/api/modules/messages', () => ({
 
 import AppPage from './+page.svelte';
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve, reject };
+}
+
 describe('app page', () => {
   beforeEach(() => {
     goto.mockReset();
@@ -129,6 +140,53 @@ describe('app page', () => {
       role: 'user',
       content: 'Hello there'
     });
+    await expect.element(page.getByRole('article').getByText('Hello there')).toBeInTheDocument();
+  });
+
+  it('refreshes conversations in parallel with sending the first message', async () => {
+    const conversationList = [
+      {
+        id: 'c-new',
+        title: 'Hello there',
+        preview: 'Hello there',
+        updatedAt: '2026-04-13T00:00:00.000Z'
+      }
+    ];
+    const refreshDeferred = createDeferred<{ data: typeof conversationList; error: null }>();
+
+    createConversation.mockResolvedValue({
+      data: conversationList[0],
+      error: null
+    });
+    getConversations.mockReturnValue(refreshDeferred.promise);
+    createConversationMessage.mockResolvedValue({
+      data: {
+        id: 'm-new',
+        conversationId: 'c-new',
+        userId: 'u1',
+        role: 'user',
+        content: 'Hello there',
+        createdAt: '2026-04-13T00:00:00.000Z',
+        updatedAt: '2026-04-13T00:00:00.000Z'
+      },
+      error: null
+    });
+
+    render(AppPage, {
+      data: { session: { user: { email: 'user@example.com' } }, conversations: [] }
+    });
+
+    await page.getByRole('textbox', { name: 'Message' }).fill('Hello there');
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    expect(getConversations).toHaveBeenCalled();
+    expect(createConversationMessage).toHaveBeenCalledWith('c-new', {
+      role: 'user',
+      content: 'Hello there'
+    });
+
+    refreshDeferred.resolve({ data: conversationList, error: null });
+
     await expect.element(page.getByRole('article').getByText('Hello there')).toBeInTheDocument();
   });
 
