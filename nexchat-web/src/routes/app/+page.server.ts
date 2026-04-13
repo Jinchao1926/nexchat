@@ -1,30 +1,17 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { AUTH_BASE_URL } from '$lib/auth/config';
+import { getConversations } from '$lib/api/modules/conversations';
+import { getSession } from '$lib/auth/server';
 
 export const load: PageServerLoad = async ({ fetch, request }) => {
-  const cookie = request.headers.get('cookie');
-  let response: Response;
+  const sessionResult = await getSession<{ user?: unknown }>({ fetch, request });
 
-  try {
-    response = await fetch(`${AUTH_BASE_URL}/get-session`, {
-      method: 'GET',
-      headers: cookie ? { cookie } : {}
-    });
-  } catch {
+  if (sessionResult.error || !sessionResult.data?.user) {
     throw redirect(303, '/');
   }
 
-  if (!response.ok) {
-    throw redirect(303, '/');
-  }
+  const { data: conversations } = await getConversations({ fetch, request });
 
-  const session = await response.json();
-
-  if (!session?.user) {
-    throw redirect(303, '/');
-  }
-
-  return { session };
+  return { session: sessionResult.data, conversations };
 };
