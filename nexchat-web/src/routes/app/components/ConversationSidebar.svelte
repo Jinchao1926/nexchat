@@ -14,14 +14,14 @@
   } = $props();
 </script>
 
-<section class="flex min-h-0 flex-1 flex-col gap-4">
-  <div class="space-y-1 px-2">
-    <h1 class="text-xl font-semibold tracking-tight text-slate-950">NexChat</h1>
-    <p class="text-sm text-slate-500">Conversations</p>
+<section class="flex min-h-0 flex-1 flex-col">
+  <div class="px-5 pb-4 pt-5">
+    <h1 class="text-lg font-semibold tracking-tight text-slate-950">NexChat</h1>
+    <p class="mt-1 text-sm text-slate-500">Conversations</p>
   </div>
 
-  <div class="min-h-0 flex-1 overflow-y-auto pr-1">
-    <div class="space-y-2">
+  <div class="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+    <div class="space-y-1.5">
       {#each conversations as conversation (conversation.id)}
         <ConversationItem
           {conversation}

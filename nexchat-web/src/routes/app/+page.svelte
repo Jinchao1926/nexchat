@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
 
+  import { createConversation, getConversations } from '$lib/api/modules/conversations';
   import { createConversationMessage, getConversationMessages } from '$lib/api/modules/messages';
   import { signOut } from '$lib/auth/client';
   import ConversationSidebar from './components/ConversationSidebar.svelte';
@@ -17,19 +18,46 @@
   }
 
   const { data }: { data: AppPageData } = $props();
+  let conversations = $state<Conversation[]>([]);
   let selectedConversationId = $state<string | null>(null);
+
+  let sidebarOpen = $state(true);
+
   let messages = $state<ConversationMessage[]>([]);
   let messagesLoading = $state(false);
   let messagesError = $state<string | null>(null);
+
   let messageDraft = $state('');
   let messageSending = $state(false);
   let messageSendError = $state<string | null>(null);
 
   const selectedConversation = $derived(
-    data.conversations.find((conversation) => conversation.id === selectedConversationId) ?? null
+    conversations.find((conversation) => conversation.id === selectedConversationId) ?? null
   );
 
+  $effect(() => {
+    conversations = data.conversations;
+  });
+
   let lastRequestedConversationId: string | null = null;
+
+  function deriveConversationTitle(content: string) {
+    const trimmed = content.trim().replace(/\s+/g, ' ');
+    return trimmed.slice(0, 20);
+  }
+
+  async function refreshConversations(
+    nextSelectedConversationId: string | null = selectedConversationId
+  ) {
+    const result = await getConversations();
+
+    if (result.error) {
+      return;
+    }
+
+    conversations = result.data;
+    selectedConversationId = nextSelectedConversationId;
+  }
 
   async function handleLogout() {
     await signOut();
@@ -62,11 +90,16 @@
     messages = result.data ?? [];
   }
 
-  async function handleDraftSend() {
-    if (!selectedConversationId) {
-      return;
-    }
+  function handleNewConversationStart() {
+    selectedConversationId = null;
+    messages = [];
+    messagesLoading = false;
+    messagesError = null;
+    messageDraft = '';
+    messageSendError = null;
+  }
 
+  async function handleDraftSend() {
     const content = messageDraft.trim();
 
     if (!content || messageSending) {
@@ -76,10 +109,29 @@
     messageSending = true;
     messageSendError = null;
 
-    const result = await createConversationMessage(selectedConversationId, {
-      role: 'user',
-      content
-    });
+    let activeConversationId = selectedConversationId;
+
+    if (!activeConversationId) {
+      const conversationResult = await createConversation({
+        title: deriveConversationTitle(content)
+      });
+
+      if (conversationResult.error || !conversationResult.data) {
+        messageSending = false;
+        messageSendError = conversationResult.error ?? 'Failed to create conversation';
+        return;
+      }
+
+      activeConversationId = conversationResult.data.id;
+      await refreshConversations(activeConversationId);
+    }
+
+    if (!activeConversationId) {
+      messageSending = false;
+      return;
+    }
+
+    const result = await createConversationMessage(activeConversationId, { role: 'user', content });
 
     messageSending = false;
 
@@ -91,6 +143,7 @@
     if (result.data) {
       messages = [result.data, ...messages];
       messageDraft = '';
+      selectedConversationId = activeConversationId;
     }
   }
 </script>
@@ -99,23 +152,24 @@
   <title>NexChat App</title>
 </svelte:head>
 
-<section
-  class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.15),_transparent_28%),linear-gradient(180deg,_rgba(252,253,255,1),_rgba(243,246,255,1))] p-4 sm:p-6"
->
-  <div class="mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl gap-4 lg:gap-6">
-    <aside
-      class="flex w-[21rem] shrink-0 flex-col gap-4 rounded-[2rem] border border-white/70 bg-white/75 p-4 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur"
-    >
-      <ConversationSidebar
-        conversations={data.conversations}
-        {selectedConversationId}
-        onSelect={handleConversationSelect}
-      />
+<section class="h-screen">
+  <div class="flex h-full bg-[#f7f8fc]">
+    {#if sidebarOpen}
+      <aside
+        class="flex h-full w-80 shrink-0 flex-col border-r border-slate-200/70 bg-[#f4f6fb]"
+        aria-label="Conversation sidebar"
+      >
+        <ConversationSidebar
+          {conversations}
+          {selectedConversationId}
+          onSelect={handleConversationSelect}
+        />
 
-      <CurrentUserCard user={data.session.user} onLogout={handleLogout} />
-    </aside>
+        <CurrentUserCard user={data.session.user} onLogout={handleLogout} />
+      </aside>
+    {/if}
 
-    <!-- <MessagePanel
+    <MessagePanel
       conversation={selectedConversation}
       {messages}
       loading={messagesLoading}
@@ -123,11 +177,13 @@
       draft={messageDraft}
       sending={messageSending}
       sendError={messageSendError}
-      onDraftChange={(value) => {
+      onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
+      onNewConversation={handleNewConversationStart}
+      onDraftChange={(value: string) => {
         messageDraft = value;
         messageSendError = null;
       }}
       onSend={handleDraftSend}
-    /> -->
+    />
   </div>
 </section>
