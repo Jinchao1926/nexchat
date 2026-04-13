@@ -36,15 +36,13 @@
   const initials = $derived(getInitials(user));
 </script>
 
-<section
-  class="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur"
->
-  <div class="flex items-center gap-3">
+<section class="p-3">
+  <div class="flex items-center gap-3 rounded-2xl bg-white/90 px-4 py-3 shadow-sm ring-1 ring-slate-200/70">
     {#if user.image}
-      <img src={user.image} alt={displayName} class="size-11 rounded-2xl object-cover" />
+      <img src={user.image} alt={displayName} class="size-11 rounded-full object-cover" />
     {:else}
       <div
-        class="flex size-11 items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground"
+        class="flex size-11 items-center justify-center rounded-full bg-primary/90 text-sm font-semibold text-primary-foreground"
         aria-hidden="true"
       >
         {initials}
@@ -58,7 +56,7 @@
 
     <button
       type="button"
-      class="flex size-10 items-center justify-center rounded-2xl border border-border text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+      class="flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
       onclick={() => onLogout()}
       aria-label="Logout"
       title="Logout"
