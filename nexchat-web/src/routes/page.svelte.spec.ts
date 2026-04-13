@@ -8,7 +8,7 @@ const { goto, signIn, signUp } = vi.hoisted(() => ({
   signUp: vi.fn().mockResolvedValue({ data: { user: { email: 'user@example.com' } }, error: null })
 }));
 
-vi.mock('$lib/auth/api', () => ({ signIn, signUp }));
+vi.mock('$lib/auth/client', () => ({ signIn, signUp }));
 vi.mock('$app/navigation', () => ({ goto }));
 
 import LoginPage from './+page.svelte';
