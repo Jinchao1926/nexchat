@@ -8,23 +8,23 @@ const { goto, signOut } = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/navigation', () => ({ goto }));
-vi.mock('$lib/auth/api', () => ({ signOut }));
+vi.mock('$lib/auth/client', () => ({ signOut }));
 
 import AppPage from './+page.svelte';
 
 describe('app page', () => {
-  it('renders the logged-in placeholder', async () => {
+  it('renders the conversation shell for logged-in users', async () => {
     render(AppPage, {
-      data: { session: { user: { email: 'user@example.com' } } }
+      data: { session: { user: { email: 'user@example.com' } }, conversations: [] }
     });
 
-    await expect.element(page.getByText('App placeholder')).toBeInTheDocument();
-    await expect.element(page.getByText('Logged in as user@example.com')).toBeInTheDocument();
+    await expect.element(page.getByText('Select a conversation')).toBeInTheDocument();
+    await expect.element(page.getByText('user@example.com')).toBeInTheDocument();
   });
 
   it('calls signOut when logout is clicked', async () => {
     render(AppPage, {
-      data: { session: { user: { email: 'user@example.com' } } }
+      data: { session: { user: { email: 'user@example.com' } }, conversations: [] }
     });
 
     await page.getByRole('button', { name: 'Logout' }).click();
