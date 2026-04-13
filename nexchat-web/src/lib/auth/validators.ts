@@ -1,7 +1,7 @@
-export type AuthInput = {
+export interface AuthInput {
   email: string;
   password: string;
-};
+}
 
 export type AuthErrors = Partial<Record<keyof AuthInput, string>>;
 

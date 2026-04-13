@@ -4,7 +4,7 @@
   import MessageCircle from '@lucide/svelte/icons/message-circle-more';
   import { Alert, Button, ButtonGroup, Card, Heading, Input, Label, P } from 'flowbite-svelte';
 
-  import { signIn, signUp } from '$lib/auth/api';
+  import { signIn, signUp } from '$lib/auth/client';
   import { validateAuthInput } from '$lib/auth/validators';
   import AuthHeroCard from './components/AuthHeroCard.svelte';
 
