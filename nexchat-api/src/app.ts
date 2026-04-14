@@ -3,7 +3,12 @@ import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from 'hono/cors';
 
 import conversationRoutes from '@/api/conversation';
-import { API_PREFIX, APP_BASE_URL, AUTH_PREFIX, WEB_APP_ORIGIN } from '@/config';
+import {
+  API_PREFIX,
+  APP_BASE_URL,
+  AUTH_PREFIX,
+  WEB_APP_ORIGIN,
+} from '@/config';
 import { auth } from '@/lib/auth';
 
 const app = new OpenAPIHono();
@@ -164,7 +169,7 @@ app.get(
   })
 );
 
-app.use(`${AUTH_PREFIX}/*`, cors(AUTH_CORS_CONFIG));
+app.use(`${API_PREFIX}/*`, cors(AUTH_CORS_CONFIG));
 
 app.on(['POST', 'GET', 'OPTIONS'], `${AUTH_PREFIX}/*`, (c) =>
   auth.handler(c.req.raw)
