@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
 
-  import { createConversation, getConversations } from '$lib/api/modules/conversations';
-  import { createConversationMessage, getConversationMessages } from '$lib/api/modules/messages';
+  import { getConversations } from '$lib/api/modules/conversations';
+  import { getConversationMessages, streamAiChat } from '$lib/api/modules/messages';
   import { signOut } from '$lib/auth/client';
   import ConversationSidebar from './components/ConversationSidebar.svelte';
   import CurrentUserCard from './components/CurrentUserCard.svelte';
@@ -41,16 +41,6 @@
 
   let lastRequestedConversationId: string | null = null;
 
-  function deriveConversationTitle(content: string) {
-    const trimmed = content.trim().replace(/\s+/g, ' ');
-    return trimmed.slice(0, 20);
-  }
-
-  function resetComposerState() {
-    messageDraft = '';
-    messageSendError = null;
-  }
-
   function resetMessagesState() {
     messages = [];
     messagesLoading = false;
@@ -77,7 +67,8 @@
   async function handleConversationSelect(conversationId: string) {
     selectedConversationId = conversationId;
     resetMessagesState();
-    resetComposerState();
+    messageDraft = '';
+    messageSendError = null;
     messagesLoading = true;
 
     lastRequestedConversationId = conversationId;
@@ -101,29 +92,8 @@
   function handleNewConversationStart() {
     selectedConversationId = null;
     resetMessagesState();
-    resetComposerState();
-  }
-
-  async function createDraftMessage(conversationId: string, content: string) {
-    return createConversationMessage(conversationId, { role: 'user', content });
-  }
-
-  async function createConversationForDraft(content: string) {
-    const conversationResult = await createConversation({
-      title: deriveConversationTitle(content)
-    });
-
-    if (conversationResult.error || !conversationResult.data) {
-      return {
-        conversationId: null,
-        error: conversationResult.error ?? 'Failed to create conversation'
-      };
-    }
-
-    return {
-      conversationId: conversationResult.data.id,
-      error: null
-    };
+    messageDraft = '';
+    messageSendError = null;
   }
 
   async function handleDraftSend() {
@@ -136,44 +106,77 @@
     messageSending = true;
     messageSendError = null;
 
-    let activeConversationId = selectedConversationId;
-    let shouldRefreshConversations = false;
+    let streamConversationId = selectedConversationId;
+    let userMessageId: string | null = null;
+    let assistantMessageId: string | null = null;
+    const now = new Date().toISOString();
 
-    if (!activeConversationId) {
-      const creation = await createConversationForDraft(content);
+    const result = await streamAiChat(
+      {
+        content,
+        ...(streamConversationId ? { conversationId: streamConversationId } : undefined)
+      },
+      {
+        onStart: (event) => {
+          streamConversationId = String(event.conversationId);
+          selectedConversationId = streamConversationId;
+          userMessageId = String(event.userMessageId);
+          assistantMessageId = String(event.assistantMessageId);
 
-      if (creation.error || !creation.conversationId) {
-        messageSending = false;
-        messageSendError = creation.error;
-        return;
+          messages = [
+            {
+              id: assistantMessageId,
+              conversationId: streamConversationId,
+              userId: data.session.user.email,
+              role: 'assistant',
+              content: '',
+              createdAt: now,
+              updatedAt: now
+            },
+            {
+              id: userMessageId,
+              conversationId: streamConversationId,
+              userId: data.session.user.email,
+              role: 'user',
+              content,
+              createdAt: now,
+              updatedAt: now
+            },
+            ...messages
+          ];
+          messageDraft = '';
+          void refreshConversations(streamConversationId);
+        },
+        onDelta: (event) => {
+          if (!assistantMessageId) {
+            return;
+          }
+
+          messages = messages.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  content: `${message.content}${event.content}`,
+                  updatedAt: new Date().toISOString()
+                }
+              : message
+          );
+        },
+        onDone: () => {
+          if (streamConversationId) {
+            void refreshConversations(streamConversationId);
+          }
+        },
+        onError: (event) => {
+          messageSendError = event.message;
+        }
       }
-
-      activeConversationId = creation.conversationId;
-      selectedConversationId = activeConversationId;
-      shouldRefreshConversations = true;
-    }
-
-    if (!activeConversationId) {
-      messageSending = false;
-      return;
-    }
-
-    const [result] = await Promise.all([
-      createDraftMessage(activeConversationId, content),
-      shouldRefreshConversations ? refreshConversations(activeConversationId) : Promise.resolve()
-    ]);
+    );
 
     messageSending = false;
 
     if (result.error) {
       messageSendError = result.error;
-      return;
-    }
-
-    if (result.data) {
-      messages = [result.data, ...messages];
-      messageDraft = '';
-      selectedConversationId = activeConversationId;
     }
   }
 </script>

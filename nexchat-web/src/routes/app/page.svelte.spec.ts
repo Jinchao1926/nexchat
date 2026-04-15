@@ -2,22 +2,15 @@ import { page } from 'vitest/browser';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 
-const {
-  goto,
-  signOut,
-  createConversation,
-  getConversations,
-  getConversationMessages,
-  createConversationMessage
-} =
-  vi.hoisted(() => ({
+const { goto, signOut, getConversations, getConversationMessages, streamAiChat } = vi.hoisted(
+  () => ({
     goto: vi.fn(),
     signOut: vi.fn().mockResolvedValue({ data: null, error: null }),
-    createConversation: vi.fn(),
     getConversations: vi.fn(),
     getConversationMessages: vi.fn(),
-    createConversationMessage: vi.fn()
-  }));
+    streamAiChat: vi.fn()
+  })
+);
 
 vi.mock('$app/navigation', () => ({ goto }));
 vi.mock('$lib/auth/client', () => ({ signOut }));
@@ -28,13 +21,12 @@ vi.mock('$lib/api/modules/conversations', async () => {
 
   return {
     ...actual,
-    getConversations,
-    createConversation
+    getConversations
   };
 });
 vi.mock('$lib/api/modules/messages', () => ({
   getConversationMessages,
-  createConversationMessage
+  streamAiChat
 }));
 
 import AppPage from './+page.svelte';
@@ -54,10 +46,9 @@ describe('app page', () => {
   beforeEach(() => {
     goto.mockReset();
     signOut.mockClear();
-    createConversation.mockReset();
     getConversations.mockReset();
     getConversationMessages.mockReset();
-    createConversationMessage.mockReset();
+    streamAiChat.mockReset();
   });
 
   it('renders the new conversation state by default for logged-in users', async () => {
@@ -92,20 +83,11 @@ describe('app page', () => {
     await expect.element(page.getByRole('textbox', { name: 'Message' })).toBeInTheDocument();
   });
 
-  it('creates a conversation from the first drafted message', async () => {
-    createConversation.mockResolvedValue({
-      data: {
-        id: 'c-new',
-        title: 'Hello there',
-        preview: 'Hello there',
-        updatedAt: '2026-04-13T00:00:00.000Z'
-      },
-      error: null
-    });
+  it('streams the first drafted message without creating a conversation on the client', async () => {
     getConversations.mockResolvedValue({
       data: [
         {
-          id: 'c-new',
+          id: '42',
           title: 'Hello there',
           preview: 'Hello there',
           updatedAt: '2026-04-13T00:00:00.000Z'
@@ -113,17 +95,19 @@ describe('app page', () => {
       ],
       error: null
     });
-    createConversationMessage.mockResolvedValue({
-      data: {
-        id: 'm-new',
-        conversationId: 'c-new',
-        userId: 'u1',
-        role: 'user',
-        content: 'Hello there',
-        createdAt: '2026-04-13T00:00:00.000Z',
-        updatedAt: '2026-04-13T00:00:00.000Z'
-      },
-      error: null
+    streamAiChat.mockImplementation(async (_payload, callbacks) => {
+      callbacks.onStart({
+        conversationId: 42,
+        userMessageId: 11,
+        assistantMessageId: 12,
+        provider: 'ollama',
+        model: 'llama'
+      });
+      callbacks.onDelta({ content: '你' });
+      callbacks.onDelta({ content: '好' });
+      callbacks.onDone({ assistantMessageId: 12 });
+
+      return { error: null };
     });
     getConversationMessages.mockResolvedValue({ data: [], error: null });
 
@@ -135,41 +119,46 @@ describe('app page', () => {
     await page.getByRole('textbox', { name: 'Message' }).fill('Hello there');
     await page.getByRole('button', { name: 'Send' }).click();
 
-    expect(createConversation).toHaveBeenCalledWith({ title: 'Hello there' });
-    expect(createConversationMessage).toHaveBeenCalledWith('c-new', {
-      role: 'user',
-      content: 'Hello there'
-    });
+    expect(streamAiChat).toHaveBeenCalledWith(
+      { content: 'Hello there' },
+      expect.objectContaining({
+        onStart: expect.any(Function),
+        onDelta: expect.any(Function),
+        onDone: expect.any(Function),
+        onError: expect.any(Function)
+      })
+    );
     await expect.element(page.getByRole('article').getByText('Hello there')).toBeInTheDocument();
+    await expect.element(page.getByRole('article').getByText('你好')).toBeInTheDocument();
   });
 
-  it('refreshes conversations in parallel with sending the first message', async () => {
+  it('updates the assistant message as streamed deltas arrive', async () => {
     const conversationList = [
       {
-        id: 'c-new',
+        id: '42',
         title: 'Hello there',
         preview: 'Hello there',
         updatedAt: '2026-04-13T00:00:00.000Z'
       }
     ];
     const refreshDeferred = createDeferred<{ data: typeof conversationList; error: null }>();
+    const secondDeltaDeferred = createDeferred<void>();
 
-    createConversation.mockResolvedValue({
-      data: conversationList[0],
-      error: null
-    });
     getConversations.mockReturnValue(refreshDeferred.promise);
-    createConversationMessage.mockResolvedValue({
-      data: {
-        id: 'm-new',
-        conversationId: 'c-new',
-        userId: 'u1',
-        role: 'user',
-        content: 'Hello there',
-        createdAt: '2026-04-13T00:00:00.000Z',
-        updatedAt: '2026-04-13T00:00:00.000Z'
-      },
-      error: null
+    streamAiChat.mockImplementation(async (_payload, callbacks) => {
+      callbacks.onStart({
+        conversationId: 42,
+        userMessageId: 11,
+        assistantMessageId: 12,
+        provider: 'ollama',
+        model: 'llama'
+      });
+      callbacks.onDelta({ content: '你' });
+      await secondDeltaDeferred.promise;
+      callbacks.onDelta({ content: '好' });
+      callbacks.onDone({ assistantMessageId: 12 });
+
+      return { error: null };
     });
 
     render(AppPage, {
@@ -180,14 +169,51 @@ describe('app page', () => {
     await page.getByRole('button', { name: 'Send' }).click();
 
     expect(getConversations).toHaveBeenCalled();
-    expect(createConversationMessage).toHaveBeenCalledWith('c-new', {
-      role: 'user',
-      content: 'Hello there'
-    });
+    expect(streamAiChat).toHaveBeenCalledWith(
+      { content: 'Hello there' },
+      expect.objectContaining({
+        onStart: expect.any(Function),
+        onDelta: expect.any(Function)
+      })
+    );
+    await expect.element(page.getByRole('article').getByText('你')).toBeInTheDocument();
+
+    secondDeltaDeferred.resolve();
 
     refreshDeferred.resolve({ data: conversationList, error: null });
 
-    await expect.element(page.getByRole('article').getByText('Hello there')).toBeInTheDocument();
+    await expect.element(page.getByRole('article').getByText('你好')).toBeInTheDocument();
+  });
+
+  it('sends the selected conversation id when streaming a reply', async () => {
+    getConversationMessages.mockResolvedValue({ data: [], error: null });
+    streamAiChat.mockResolvedValue({ error: null });
+
+    render(AppPage, {
+      data: {
+        session: { user: { email: 'user@example.com' } },
+        conversations: [
+          {
+            id: '42',
+            title: 'First chat',
+            preview: 'Hello',
+            updatedAt: '2026-04-13T00:00:00.000Z'
+          }
+        ]
+      }
+    });
+
+    await page.getByRole('button', { name: 'First chat' }).click();
+    await page.getByRole('textbox', { name: 'Message' }).fill('Reply');
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    expect(streamAiChat).toHaveBeenCalledWith(
+      { content: 'Reply', conversationId: '42' },
+      expect.objectContaining({
+        onStart: expect.any(Function),
+        onDelta: expect.any(Function)
+      })
+    );
   });
 
   it('toggles the sidebar from the title bar button', async () => {

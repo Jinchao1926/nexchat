@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createConversationMessage, getConversationMessages } from './messages';
+import { createConversationMessage, getConversationMessages, streamAiChat } from './messages';
 
 describe('messages api module', () => {
   it('returns typed message records from a nested data payload', async () => {
@@ -82,5 +82,93 @@ describe('messages api module', () => {
       },
       error: null
     });
+  });
+
+  it('streams an AI chat response through server-sent events', async () => {
+    const encoder = new TextEncoder();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(
+                [
+                  'event: start',
+                  'data: {"conversationId":42,"userMessageId":11,"assistantMessageId":12,"provider":"ollama","model":"llama"}',
+                  '',
+                  'event: delta',
+                  'data: {"content":"你"}',
+                  '',
+                  'event: delta',
+                  'data: {"content":"好"}',
+                  '',
+                  'event: done',
+                  'data: {"assistantMessageId":12}',
+                  '',
+                  ''
+                ].join('\n')
+              )
+            );
+            controller.close();
+          }
+        }),
+        {
+          headers: { 'content-type': 'text/event-stream' }
+        }
+      )
+    );
+    const events: string[] = [];
+
+    const result = await streamAiChat(
+      { content: '你好', conversationId: '42' },
+      {
+        onStart: (event) => events.push(`start:${event.conversationId}`),
+        onDelta: (event) => events.push(`delta:${event.content}`),
+        onDone: (event) => events.push(`done:${event.assistantMessageId}`)
+      },
+      fetchMock as typeof fetch
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:6001/api/v1/ai/stream',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify({ content: '你好', conversationId: '42' })
+      })
+    );
+    expect(result).toEqual({ error: null });
+    expect(events).toEqual(['start:42', 'delta:你', 'delta:好', 'done:12']);
+  });
+
+  it('returns streamed AI errors from error events', async () => {
+    const encoder = new TextEncoder();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(
+                ['event: error', 'data: {"message":"Model unavailable"}', '', ''].join('\n')
+              )
+            );
+            controller.close();
+          }
+        }),
+        {
+          headers: { 'content-type': 'text/event-stream' }
+        }
+      )
+    );
+
+    const result = await streamAiChat(
+      { content: 'Hello' },
+      {
+        onError: vi.fn()
+      },
+      fetchMock as typeof fetch
+    );
+
+    expect(result).toEqual({ error: 'Model unavailable' });
   });
 });
