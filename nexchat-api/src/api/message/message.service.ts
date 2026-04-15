@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 import { type DatabaseClient, db } from '@/db';
 import { message } from '@/db/schema';
@@ -9,6 +9,18 @@ export type MessageRecord = typeof message.$inferSelect;
 type CreateMessageInput = CreateMessageBody & {
   conversationId: number;
   userId: string;
+  status?: MessageRecord['status'];
+  provider?: string | null;
+  model?: string | null;
+  error?: string | null;
+};
+
+export type UpdateMessageStatusInput = {
+  content?: string;
+  status?: MessageRecord['status'];
+  provider?: string | null;
+  model?: string | null;
+  error?: string | null;
 };
 
 export function listMessagesByConversationId(
@@ -21,6 +33,26 @@ export function listMessagesByConversationId(
     .where(eq(message.conversationId, conversationId))
     .orderBy(desc(message.id))
     .all();
+}
+
+export function listRecentCompletedMessagesByConversationId(
+  conversationId: number,
+  limit = 10,
+  database: DatabaseClient = db
+): MessageRecord[] {
+  return database
+    .select()
+    .from(message)
+    .where(
+      and(
+        eq(message.conversationId, conversationId),
+        eq(message.status, 'completed')
+      )
+    )
+    .orderBy(desc(message.id))
+    .limit(limit)
+    .all()
+    .reverse();
 }
 
 export function getMessageById(
@@ -41,10 +73,28 @@ export async function createMessage(
       userId: input.userId,
       role: input.role,
       content: input.content,
+      status: input.status ?? 'completed',
+      provider: input.provider ?? null,
+      model: input.model ?? null,
+      error: input.error ?? null,
     })
     .returning();
 
   return created ?? null;
+}
+
+export async function updateMessageStatus(
+  id: number,
+  input: UpdateMessageStatusInput,
+  database: DatabaseClient = db
+): Promise<MessageRecord | null> {
+  const [updated] = await database
+    .update(message)
+    .set(input)
+    .where(eq(message.id, id))
+    .returning();
+
+  return updated ?? null;
 }
 
 export async function updateMessage(

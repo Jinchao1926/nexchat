@@ -40,8 +40,12 @@ function toMessageResponse(message: {
   id: number;
   conversationId: number;
   userId: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
+  status: 'pending' | 'streaming' | 'completed' | 'failed';
+  provider: string | null;
+  model: string | null;
+  error: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {

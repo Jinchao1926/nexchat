@@ -14,11 +14,36 @@ test('messageResponseSchema accepts a message payload', () => {
     userId: 'user-1',
     role: 'user',
     content: 'Hello',
+    status: 'completed',
+    provider: null,
+    model: null,
+    error: null,
     createdAt: '2026-04-10T00:00:00.000Z',
     updatedAt: '2026-04-10T00:00:00.000Z',
   });
 
   assert.equal(result.success, true);
+});
+
+test('messageResponseSchema accepts AI metadata fields', () => {
+  const parsed = messageResponseSchema.parse({
+    id: 1,
+    conversationId: 1,
+    userId: 'user-1',
+    role: 'assistant',
+    content: 'Hello',
+    status: 'completed',
+    provider: 'ollama',
+    model: 'qwen2.5:3b',
+    error: null,
+    createdAt: '2026-04-10T00:00:00.000Z',
+    updatedAt: '2026-04-10T00:00:00.000Z',
+  });
+
+  assert.equal(parsed.status, 'completed');
+  assert.equal(parsed.provider, 'ollama');
+  assert.equal(parsed.model, 'qwen2.5:3b');
+  assert.equal(parsed.error, null);
 });
 
 test('messagesListResponseSchema wraps message arrays in data', () => {
@@ -30,6 +55,10 @@ test('messagesListResponseSchema wraps message arrays in data', () => {
         userId: 'user-1',
         role: 'assistant',
         content: 'Hi',
+        status: 'completed',
+        provider: null,
+        model: null,
+        error: null,
         createdAt: '2026-04-10T00:00:00.000Z',
         updatedAt: '2026-04-10T00:00:00.000Z',
       },
@@ -46,6 +75,10 @@ test('messageSingleResponseSchema rejects missing data wrappers', () => {
     userId: 'user-1',
     role: 'user',
     content: 'Hello',
+    status: 'completed',
+    provider: null,
+    model: null,
+    error: null,
     createdAt: '2026-04-10T00:00:00.000Z',
     updatedAt: '2026-04-10T00:00:00.000Z',
   });

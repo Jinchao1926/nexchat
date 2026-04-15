@@ -34,6 +34,7 @@ const OPENAPI_TAGS: OpenApiTag[] = [
   { name: 'Auth' },
   { name: 'Conversations' },
   { name: 'Messages' },
+  { name: 'AI' },
 ];
 
 const OPENAPI_SECURITY_SCHEMES = {

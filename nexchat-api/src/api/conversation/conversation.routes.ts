@@ -1,5 +1,6 @@
 import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
 
+import aiRoutes from '@/api/ai';
 import messageRoutes from '@/api/message';
 import {
   badRequestResponseSchema,
@@ -270,6 +271,7 @@ const deleteConversationRoute = createRoute({
   },
 });
 
+app.route('/:id/ai', aiRoutes);
 app.route('/:id/messages', messageRoutes);
 app.openapi(listConversationsRoute, listConversationsHandler);
 app.openapi(getConversationRoute, getConversationHandler);
