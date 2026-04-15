@@ -31,6 +31,7 @@
 
   const newConversation = $derived(conversation === null);
   const title = $derived(conversation?.title ?? 'New conversation');
+  const hasConversationMessages = $derived(conversation !== null || messages.length > 0);
   const centeredStateClass = 'flex flex-1 items-center justify-center';
   const mutedCenteredStateClass = `${centeredStateClass} text-sm text-slate-500`;
 </script>
@@ -43,7 +44,7 @@
   />
 
   <div class="flex min-h-0 flex-1 flex-col">
-    {#if conversation}
+    {#if hasConversationMessages}
       <div class="flex min-h-0 flex-1 flex-col">
         {#if loading}
           <div class={mutedCenteredStateClass}>Loading messages…</div>
