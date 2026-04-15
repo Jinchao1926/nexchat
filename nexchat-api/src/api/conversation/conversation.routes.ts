@@ -1,6 +1,7 @@
-import { OpenAPIHono, createRoute } from '@hono/zod-openapi';
+import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 
-import aiRoutes from '@/api/ai';
+import { streamConversationAiChatHandler } from '@/api/ai/ai.handlers';
+import { streamConversationAiChatBodySchema } from '@/api/ai/ai.schemas';
 import messageRoutes from '@/api/message';
 import {
   badRequestResponseSchema,
@@ -271,12 +272,75 @@ const deleteConversationRoute = createRoute({
   },
 });
 
-app.route('/:id/ai', aiRoutes);
+const streamConversationAiChatRoute = createRoute({
+  method: 'post',
+  path: '/{id}/ai/stream',
+  tags: ['AI'],
+  summary: 'Stream an AI assistant response',
+  deprecated: true,
+  security: sessionCookieSecurity,
+  middleware: [requireSession],
+  request: {
+    params: conversationIdParamsSchema,
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: streamConversationAiChatBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Server-sent AI response stream',
+      content: {
+        'text/event-stream': {
+          schema: z.string(),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid AI stream payload',
+      content: {
+        'application/json': {
+          schema: badRequestResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: 'Forbidden',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: 'Conversation not found',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 app.route('/:id/messages', messageRoutes);
 app.openapi(listConversationsRoute, listConversationsHandler);
 app.openapi(getConversationRoute, getConversationHandler);
 app.openapi(createConversationRoute, createConversationHandler);
 app.openapi(updateConversationRoute, updateConversationHandler);
 app.openapi(deleteConversationRoute, deleteConversationHandler);
+app.openapi(streamConversationAiChatRoute, streamConversationAiChatHandler);
 
 export default app;

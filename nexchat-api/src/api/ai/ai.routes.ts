@@ -8,7 +8,7 @@ import {
 import { requireSession } from '@/middlewares/require-session';
 
 import { streamAiChatHandler } from './ai.handlers';
-import { aiChatParamsSchema, streamAiChatBodySchema } from './ai.schemas';
+import { streamAiChatBodySchema } from './ai.schemas';
 
 const app = new OpenAPIHono();
 
@@ -20,7 +20,6 @@ const streamAiChatRoute = createRoute({
   security: sessionCookieSecurity,
   middleware: [requireSession],
   request: {
-    params: aiChatParamsSchema,
     body: {
       required: true,
       content: {
