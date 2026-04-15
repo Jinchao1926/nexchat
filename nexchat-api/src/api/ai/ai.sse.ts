@@ -6,6 +6,7 @@ const SSE_HEADERS = {
 
 export interface SsePayloadByEvent {
   start: {
+    conversationId: number;
     userMessageId: number;
     assistantMessageId: number;
     provider: string;

@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from 'hono/cors';
 
+import aiRoutes from '@/api/ai';
 import conversationRoutes from '@/api/conversation';
 import {
   API_PREFIX,
@@ -176,6 +177,7 @@ app.on(['POST', 'GET', 'OPTIONS'], `${AUTH_PREFIX}/*`, (c) =>
   auth.handler(c.req.raw)
 );
 
+app.route(`${API_PREFIX}/ai`, aiRoutes);
 app.route(`${API_PREFIX}/conversations`, conversationRoutes);
 
 app.openapi(rootRoute, (c) => c.text('Hello from NexChat!', 200));

@@ -3,10 +3,9 @@ import { desc, eq } from 'drizzle-orm';
 import { type DatabaseClient, db } from '@/db';
 import { conversation } from '@/db/schema';
 
-import type {
-  CreateConversationBody,
-  UpdateConversationBody,
-} from './conversation.schemas';
+interface ConversationTitleInput {
+  title: string;
+}
 
 export type ConversationRecord = typeof conversation.$inferSelect;
 
@@ -34,7 +33,7 @@ export function getConversationById(
 }
 
 export async function createConversation(
-  input: CreateConversationBody,
+  input: ConversationTitleInput,
   userId: string,
   database: DatabaseClient = db
 ): Promise<ConversationRecord | null> {
@@ -51,7 +50,7 @@ export async function createConversation(
 
 export async function updateConversation(
   id: number,
-  input: UpdateConversationBody,
+  input: ConversationTitleInput,
   database: DatabaseClient = db
 ): Promise<ConversationRecord | null> {
   const [updated] = await database
