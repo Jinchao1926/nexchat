@@ -44,7 +44,7 @@ export async function signOut<T = unknown>(context?: ApiContext): Promise<AuthRe
   const client = getAuthClient(context);
 
   try {
-    const { data, error } = await client.post<T>('/sign-out', undefined, 'Authentication failed');
+    const { data, error } = await client.post<T>('/sign-out', {}, 'Authentication failed');
 
     return { data, error };
   } catch {
