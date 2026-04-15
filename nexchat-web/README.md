@@ -1,22 +1,48 @@
 # NexChat Web
 
-## Local development
+`nexchat-web` is the web client for NexChat. It is built with SvelteKit and handles login, conversation lists, message display, and chat interactions.
 
-1. Start the API server:
+## Tech Stack
 
-   ```sh
-   pnpm --dir ../nexchat-api dev
-   ```
+- SvelteKit
+- Svelte 5 (runes mode)
+- Vite
+- TypeScript
+- Tailwind CSS 4
+- Flowbite Svelte
+- Vitest
+- Playwright
 
-2. Start the web app:
+## Running Locally
 
-   ```sh
-   pnpm dev
-   ```
+Start the API first:
 
-## Auth flow
+```sh
+pnpm --dir ../nexchat-api dev
+```
 
-- `/` shows the login page
-- `/app` is protected and requires a valid auth session
-- The web app expects the auth server at `http://localhost:6001`
-- Email/password sign-in and sign-up both use the existing `better-auth` backend
+Then start the web app:
+
+```sh
+pnpm install
+pnpm dev
+```
+
+Default URL: `http://localhost:5173`
+
+## Backend Integration
+
+- Login page: `/`
+- Chat page: `/app`
+- Depends on backend auth and conversation APIs
+- Default API base URL: `http://localhost:6001/api/v1`
+- Default auth server URL: `http://localhost:6001`
+
+## Common Commands
+
+```sh
+pnpm dev
+pnpm check
+pnpm test
+pnpm build
+```
