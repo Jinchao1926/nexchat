@@ -1,6 +1,7 @@
 import type { AiProvider, AiStreamChatInput, AiStreamChunk } from '../provider';
 
 type Fetch = typeof globalThis.fetch;
+const DEFAULT_OLLAMA_MODEL = 'qwen2.5:3b';
 
 interface OllamaProviderOptions {
   baseUrl: string;
@@ -52,14 +53,64 @@ async function getOllamaHttpError(response: Response) {
   }
 }
 
+function getOllamaChunk(line: string): AiStreamChunk | null {
+  const parsed = parseOllamaLine(line);
+
+  if (!parsed || parsed.done) {
+    return null;
+  }
+
+  if (parsed.error) {
+    throw new Error(parsed.error);
+  }
+
+  const content = parsed.message?.content;
+  return content ? { content } : null;
+}
+
+async function* streamOllamaResponse(
+  body: ReadableStream<Uint8Array>
+): AsyncIterable<AiStreamChunk> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  function* flushBuffer(flushTail = false): Generator<AiStreamChunk> {
+    const lines = buffer.split('\n');
+    buffer = flushTail ? '' : (lines.pop() ?? '');
+
+    for (const line of lines) {
+      const chunk = getOllamaChunk(line);
+      if (chunk) {
+        yield chunk;
+      }
+    }
+  }
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    yield* flushBuffer();
+  }
+
+  buffer += decoder.decode();
+  yield* flushBuffer(true);
+}
+
 export function createOllamaProvider(
   options: OllamaProviderOptions
 ): AiProvider {
   const fetchImpl = options.fetch ?? globalThis.fetch;
+  const defaultModel = options.defaultModel ?? DEFAULT_OLLAMA_MODEL;
 
   return {
     name: 'ollama',
-    defaultModel: options.defaultModel ?? 'qwen2.5:3b',
+    defaultModel,
     async *streamChat(input: AiStreamChatInput): AsyncIterable<AiStreamChunk> {
       const response = await fetchImpl(`${options.baseUrl}/api/chat`, {
         method: 'POST',
@@ -67,8 +118,9 @@ export function createOllamaProvider(
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: input.model ?? options.defaultModel ?? 'qwen2.5:3b',
+          model: input.model ?? defaultModel,
           messages: input.messages,
+          temperature: 0.7,
           stream: true,
           think: false,
         }),
@@ -82,45 +134,9 @@ export function createOllamaProvider(
         throw new Error('Ollama response body is empty');
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
-          for (const line of lines) {
-            const parsed = parseOllamaLine(line);
-
-            if (!parsed || parsed.done) {
-              continue;
-            }
-
-            if (parsed.error) {
-              throw new Error(parsed.error);
-            }
-
-            if (parsed.message?.content) {
-              yield { content: parsed.message.content };
-            }
-          }
-        }
-
-        const tail = parseOllamaLine(buffer);
-        if (tail?.error) {
-          throw new Error(tail.error);
-        }
-        if (tail?.message?.content) {
-          yield { content: tail.message.content };
+        for await (const chunk of streamOllamaResponse(response.body)) {
+          yield chunk;
         }
       } catch (error) {
         throw new Error(`Ollama stream failed: ${getErrorMessage(error)}`);
