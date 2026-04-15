@@ -8,6 +8,13 @@
       "when": 1775712691655,
       "tag": "0000_new_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1776134226019,
+      "tag": "0001_lean_cardiac",
+      "breakpoints": true
     }
   ]
 }

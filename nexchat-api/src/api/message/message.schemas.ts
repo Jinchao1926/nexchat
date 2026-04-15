@@ -29,9 +29,17 @@ export const conversationMessageParamsSchema =
       }),
   });
 
+export const messageRoleSchema = z.enum(['user', 'assistant', 'system']);
+export const messageStatusSchema = z.enum([
+  'pending',
+  'streaming',
+  'completed',
+  'failed',
+]);
+
 export const createMessageBodySchema = z
   .object({
-    role: z.enum(['user', 'assistant']),
+    role: messageRoleSchema,
     content: z.string().trim().nonempty(),
   })
   .strict();
