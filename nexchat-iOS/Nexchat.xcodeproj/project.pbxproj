@@ -7,13 +7,17 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		CE5FB7F92F90C8E100039155 /* Nextchat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nextchat.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE5FB7F92F90C8E100039155 /* Nexchat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nexchat.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXBuildFile section */
+		CE5FB8102F90C8E200039155 /* NexchatCore in Frameworks */ = {isa = PBXBuildFile; productRef = CE5FB8112F90C8E200039155 /* NexchatCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		CE5FB7FB2F90C8E100039155 /* Nextchat */ = {
+		CE5FB7FB2F90C8E100039155 /* Nexchat */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Nextchat;
+			path = Nexchat;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE5FB8102F90C8E200039155 /* NexchatCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -32,7 +37,7 @@
 		CE5FB7F02F90C8E100039155 = {
 			isa = PBXGroup;
 			children = (
-				CE5FB7FB2F90C8E100039155 /* Nextchat */,
+				CE5FB7FB2F90C8E100039155 /* Nexchat */,
 				CE5FB7FA2F90C8E100039155 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +45,7 @@
 		CE5FB7FA2F90C8E100039155 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CE5FB7F92F90C8E100039155 /* Nextchat.app */,
+				CE5FB7F92F90C8E100039155 /* Nexchat.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +53,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CE5FB7F82F90C8E100039155 /* Nextchat */ = {
+		CE5FB7F82F90C8E100039155 /* Nexchat */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CE5FB8042F90C8E200039155 /* Build configuration list for PBXNativeTarget "Nextchat" */;
+			buildConfigurationList = CE5FB8042F90C8E200039155 /* Build configuration list for PBXNativeTarget "Nexchat" */;
 			buildPhases = (
 				CE5FB7F52F90C8E100039155 /* Sources */,
 				CE5FB7F62F90C8E100039155 /* Frameworks */,
@@ -61,13 +66,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				CE5FB7FB2F90C8E100039155 /* Nextchat */,
+				CE5FB7FB2F90C8E100039155 /* Nexchat */,
 			);
-			name = Nextchat;
+			name = Nexchat;
 			packageProductDependencies = (
+				CE5FB8112F90C8E200039155 /* NexchatCore */,
 			);
-			productName = Nextchat;
-			productReference = CE5FB7F92F90C8E100039155 /* Nextchat.app */;
+			productName = Nexchat;
+			productReference = CE5FB7F92F90C8E100039155 /* Nexchat.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +91,7 @@
 					};
 				};
 			};
-			buildConfigurationList = CE5FB7F42F90C8E100039155 /* Build configuration list for PBXProject "Nextchat" */;
+			buildConfigurationList = CE5FB7F42F90C8E100039155 /* Build configuration list for PBXProject "Nexchat" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -94,12 +100,15 @@
 			);
 			mainGroup = CE5FB7F02F90C8E100039155;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CE5FB8122F90C8E200039155 /* XCLocalSwiftPackageReference "NexchatCore" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CE5FB7FA2F90C8E100039155 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				CE5FB7F82F90C8E100039155 /* Nextchat */,
+				CE5FB7F82F90C8E100039155 /* Nexchat */,
 			);
 		};
 /* End PBXProject section */
@@ -256,6 +265,7 @@
 				DEVELOPMENT_TEAM = Z8L6HPM4D4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -266,7 +276,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jinchao.Nextchat;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jinchao.Nexchat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -288,6 +298,7 @@
 				DEVELOPMENT_TEAM = Z8L6HPM4D4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -298,7 +309,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jinchao.Nextchat;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jinchao.Nexchat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -313,7 +324,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CE5FB7F42F90C8E100039155 /* Build configuration list for PBXProject "Nextchat" */ = {
+		CE5FB7F42F90C8E100039155 /* Build configuration list for PBXProject "Nexchat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CE5FB8022F90C8E200039155 /* Debug */,
@@ -322,7 +333,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CE5FB8042F90C8E200039155 /* Build configuration list for PBXNativeTarget "Nextchat" */ = {
+		CE5FB8042F90C8E200039155 /* Build configuration list for PBXNativeTarget "Nexchat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CE5FB8052F90C8E200039155 /* Debug */,
@@ -332,6 +343,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		CE5FB8122F90C8E200039155 /* XCLocalSwiftPackageReference "NexchatCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = NexchatCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CE5FB8112F90C8E200039155 /* NexchatCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE5FB8122F90C8E200039155 /* XCLocalSwiftPackageReference "NexchatCore" */;
+			productName = NexchatCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE5FB7F12F90C8E100039155 /* Project object */;
 }
