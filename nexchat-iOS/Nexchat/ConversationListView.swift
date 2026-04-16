@@ -51,52 +51,23 @@ struct ConversationListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        viewModel.isCreateSheetPresented = true
+                        path.append(viewModel.makeDraftConversation())
                     } label: {
                         Image(systemName: "square.and.pencil")
                     }
                 }
             }
             .navigationDestination(for: Conversation.self) { conversation in
-                MessageListView(messageService: messageService, conversation: conversation)
+                MessageListView(
+                    messageService: messageService,
+                    conversation: conversation,
+                    onConversationUpsert: { updatedConversation in
+                        viewModel.upsertConversation(updatedConversation)
+                    }
+                )
             }
             .task {
                 await viewModel.loadConversations()
-            }
-            .onChange(of: viewModel.pendingNavigationConversationID) { _, newValue in
-                guard
-                    let newValue,
-                    let conversation = viewModel.conversations.first(where: { $0.id == newValue })
-                else {
-                    return
-                }
-
-                path.append(conversation)
-                _ = viewModel.consumePendingNavigationConversationID()
-            }
-            .sheet(isPresented: $viewModel.isCreateSheetPresented) {
-                NavigationStack {
-                    Form {
-                        TextField("会话标题", text: $viewModel.newConversationTitle)
-                    }
-                    .navigationTitle("新建会话")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button("取消") {
-                                viewModel.isCreateSheetPresented = false
-                            }
-                        }
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("创建") {
-                                Task {
-                                    await viewModel.createConversation()
-                                }
-                            }
-                        }
-                    }
-                }
-                .presentationDetents([.fraction(0.25)])
             }
         }
     }

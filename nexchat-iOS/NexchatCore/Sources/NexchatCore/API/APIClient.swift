@@ -35,36 +35,28 @@ private struct ErrorResponse: Decodable {
     let message: String?
 }
 
-private struct AnyEncodable: Encodable, @unchecked Sendable {
-    private let encodeBlock: (Encoder) throws -> Void
-
-    init(_ value: some Encodable) {
-        encodeBlock = value.encode(to:)
-    }
-
-    func encode(to encoder: Encoder) throws {
-        try encodeBlock(encoder)
-    }
-}
-
 public final class APIClient: @unchecked Sendable {
     public typealias Transport = @Sendable (URLRequest) async throws -> (Data, HTTPURLResponse)
+    public typealias StreamTransport = @Sendable (URLRequest) throws -> AsyncThrowingStream<String, Error>
 
     public let config: APIConfig
     private let session: Session
     private let decoder: JSONDecoder
     private let transport: Transport?
+    private let streamTransport: StreamTransport?
 
     public init(
         config: APIConfig = APIConfig(),
         session: Session = .default,
         decoder: JSONDecoder = JSONDecoder(),
-        transport: Transport? = nil
+        transport: Transport? = nil,
+        streamTransport: StreamTransport? = nil
     ) {
         self.config = config
         self.session = session
         self.decoder = decoder
         self.transport = transport
+        self.streamTransport = streamTransport
     }
 
     public func get<Response: Decodable>(
@@ -80,6 +72,56 @@ public final class APIClient: @unchecked Sendable {
         baseURL: URL? = nil
     ) async throws -> Response {
         try await request(path, method: .post, body: body, baseURL: baseURL)
+    }
+
+    public func stream<Body: Encodable>(
+        _ path: String,
+        body: Body,
+        baseURL: URL? = nil
+    ) throws -> AsyncThrowingStream<String, Error> {
+        let requestURL = resolveURL(path: path, baseURL: baseURL)
+        let request = try makeURLRequest(url: requestURL, method: .post, body: body)
+
+        if let streamTransport {
+            return try streamTransport(request)
+        }
+
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        throw APIError.invalidResponse
+                    }
+
+                    guard (200 ..< 300).contains(httpResponse.statusCode) else {
+                        var errorBody = ""
+                        for try await line in bytes.lines {
+                            errorBody += line
+                        }
+
+                        throw parseError(
+                            data: Data(errorBody.utf8),
+                            statusCode: httpResponse.statusCode,
+                            fallback: "Request failed"
+                        )
+                    }
+
+                    for try await line in bytes.lines {
+                        continuation.yield(line)
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
     }
 
     private func request<Body: Encodable, Response: Decodable>(
@@ -104,18 +146,8 @@ public final class APIClient: @unchecked Sendable {
             }
         }
 
-        let dataRequest: DataRequest
-
-        if let body {
-            dataRequest = session.request(
-                requestURL,
-                method: method,
-                parameters: AnyEncodable(body),
-                encoder: JSONParameterEncoder.default
-            )
-        } else {
-            dataRequest = session.request(requestURL, method: method)
-        }
+        let request = try makeURLRequest(url: requestURL, method: method, body: body)
+        let dataRequest = session.request(request)
 
         let response = await dataRequest
             .validate(statusCode: 200 ..< 300)
@@ -149,6 +181,7 @@ public final class APIClient: @unchecked Sendable {
     ) throws -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
+        applyOriginHeader(to: &request)
 
         if let body {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -156,6 +189,23 @@ public final class APIClient: @unchecked Sendable {
         }
 
         return request
+    }
+
+    private func applyOriginHeader(to request: inout URLRequest) {
+        guard request.value(forHTTPHeaderField: "Origin") == nil,
+              let url = request.url,
+              let scheme = url.scheme,
+              let host = url.host else {
+            return
+        }
+
+        let origin = if let port = url.port {
+            "\(scheme)://\(host):\(port)"
+        } else {
+            "\(scheme)://\(host)"
+        }
+
+        request.setValue(origin, forHTTPHeaderField: "Origin")
     }
 
     private func parseError(data: Data?, statusCode: Int?, fallback: String) -> APIError {
