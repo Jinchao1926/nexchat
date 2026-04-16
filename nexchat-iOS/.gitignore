@@ -1,0 +1,6 @@
+/.swiftpm/
+/NexchatCore/.build/
+/NexchatCore/.build-local/
+/NexchatCore/.swiftpm/
+/Nexchat.xcodeproj/project.xcworkspace/xcuserdata/
+/Nexchat.xcodeproj/xcuserdata/

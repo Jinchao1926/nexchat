@@ -1,8 +1,0 @@
-.DS_Store
-
-# Xcode creates multiple directories with this name for user-specific options
-xcuserdata
-xcshareddata
-Breakpoints.xcbkptlist
-
-.xcscheme
