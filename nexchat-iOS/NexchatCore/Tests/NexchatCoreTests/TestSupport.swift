@@ -77,8 +77,20 @@ struct MockConversationService: ConversationServiceProtocol {
 
 struct MockMessageService: MessageServiceProtocol {
     var fetchHandler: @Sendable (String) async throws -> [ConversationMessage] = { _ in [] }
+    var streamHandler: @Sendable (String, String?) throws -> AsyncThrowingStream<MessageStreamEvent, Error> = { _, _ in
+        AsyncThrowingStream { continuation in
+            continuation.finish()
+        }
+    }
 
     func fetchMessages(conversationID: String) async throws -> [ConversationMessage] {
         try await fetchHandler(conversationID)
+    }
+
+    func streamMessage(
+        content: String,
+        conversationID: String?
+    ) throws -> AsyncThrowingStream<MessageStreamEvent, Error> {
+        try streamHandler(content, conversationID)
     }
 }

@@ -46,4 +46,104 @@ struct MessageServiceTests {
         #expect(messages.first?.conversationID == "42")
         #expect(messages.first?.content == "Hello")
     }
+
+    @Test("stream message posts ai stream payload and parses sse events")
+    func streamMessage() async throws {
+        let baseURL = URL(string: "http://messages-stream.local/api/v1")!
+        let client = APIClient(
+            config: APIConfig(baseURL: baseURL),
+            streamTransport: { request in
+                #expect(request.url?.absoluteString == "http://messages-stream.local/api/v1/ai/stream")
+                #expect(request.httpMethod == "POST")
+                let body = try request.httpBodyJSON()
+                #expect(body["content"] as? String == "你好")
+                #expect(body["conversationId"] as? String == "42")
+
+                return AsyncThrowingStream { continuation in
+                    [
+                        "event: start",
+                        #"data: {"conversationId":42,"userMessageId":101,"assistantMessageId":102,"provider":"ollama","model":"qwen3"}"#,
+                        "",
+                        "event: delta",
+                        #"data: {"content":"你"}"#,
+                        "",
+                        "event: delta",
+                        #"data: {"content":"好"}"#,
+                        "",
+                        "event: done",
+                        #"data: {"assistantMessageId":102}"#,
+                        "",
+                    ].forEach { continuation.yield($0) }
+
+                    continuation.finish()
+                }
+            }
+        )
+
+        let service = MessageService(client: client)
+        let stream = try service.streamMessage(content: "你好", conversationID: "42")
+        var events: [MessageStreamEvent] = []
+
+        for try await event in stream {
+            events.append(event)
+        }
+
+        #expect(events == [
+            .start(
+                conversationID: "42",
+                userMessageID: "101",
+                assistantMessageID: "102",
+                provider: "ollama",
+                model: "qwen3"
+            ),
+            .delta("你"),
+            .delta("好"),
+            .done(assistantMessageID: "102"),
+        ])
+    }
+
+    @Test("stream message parses events even when line stream omits blank separators")
+    func streamMessageWithoutBlankLines() async throws {
+        let baseURL = URL(string: "http://messages-stream-no-blank.local/api/v1")!
+        let client = APIClient(
+            config: APIConfig(baseURL: baseURL),
+            streamTransport: { _ in
+                AsyncThrowingStream { continuation in
+                    [
+                        "event: start",
+                        #"data: {"conversationId":42,"userMessageId":101,"assistantMessageId":102,"provider":"ollama","model":"qwen3"}"#,
+                        "event: delta",
+                        #"data: {"content":"你"}"#,
+                        "event: delta",
+                        #"data: {"content":"好"}"#,
+                        "event: done",
+                        #"data: {"assistantMessageId":102}"#,
+                    ].forEach { continuation.yield($0) }
+
+                    continuation.finish()
+                }
+            }
+        )
+
+        let service = MessageService(client: client)
+        let stream = try service.streamMessage(content: "你好", conversationID: "42")
+        var events: [MessageStreamEvent] = []
+
+        for try await event in stream {
+            events.append(event)
+        }
+
+        #expect(events == [
+            .start(
+                conversationID: "42",
+                userMessageID: "101",
+                assistantMessageID: "102",
+                provider: "ollama",
+                model: "qwen3"
+            ),
+            .delta("你"),
+            .delta("好"),
+            .done(assistantMessageID: "102"),
+        ])
+    }
 }

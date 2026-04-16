@@ -32,3 +32,20 @@ public struct Conversation: Codable, Equatable, Identifiable, Hashable, Sendable
         updatedAt = try container.decode(String.self, forKey: .updatedAt)
     }
 }
+
+public extension Conversation {
+    static func draft(title: String = "新会话") -> Conversation {
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        return Conversation(
+            id: "draft:\(UUID().uuidString)",
+            userID: "",
+            title: title,
+            createdAt: timestamp,
+            updatedAt: timestamp
+        )
+    }
+
+    var isDraft: Bool {
+        id.hasPrefix("draft:")
+    }
+}

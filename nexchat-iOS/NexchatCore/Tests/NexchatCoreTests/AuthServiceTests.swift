@@ -14,6 +14,7 @@ struct AuthServiceTests {
                 recorder.append(request)
                 #expect(request.url?.absoluteString == "http://auth-signin.local/api/v1/auth/sign-in/email")
                 #expect(request.httpMethod == "POST")
+                #expect(request.value(forHTTPHeaderField: "Origin") == "http://auth-signin.local")
                 let body = try request.httpBodyJSON()
                 #expect(body["email"] as? String == "user@example.com")
                 #expect(body["password"] as? String == "123456")

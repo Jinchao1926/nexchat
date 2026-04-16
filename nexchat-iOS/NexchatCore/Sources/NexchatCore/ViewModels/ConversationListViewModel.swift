@@ -28,6 +28,15 @@ public final class ConversationListViewModel: ObservableObject {
         }
     }
 
+    public func makeDraftConversation() -> Conversation {
+        Conversation.draft()
+    }
+
+    public func upsertConversation(_ conversation: Conversation) {
+        conversations.removeAll(where: { $0.id == conversation.id })
+        conversations.insert(conversation, at: 0)
+    }
+
     public func createConversation() async {
         let title = newConversationTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else {
