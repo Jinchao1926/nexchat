@@ -107,7 +107,7 @@ public final class MessageListViewModel: ObservableObject {
                             conversationID: message.conversationID,
                             userID: message.userID,
                             role: message.role,
-                            content: message.content + delta,
+                            content: message.content + delta,   // Add trunk
                             status: .streaming,
                             provider: message.provider,
                             model: message.model,

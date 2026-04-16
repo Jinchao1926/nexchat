@@ -81,7 +81,7 @@ struct MessageListView: View {
                 alignment: message.role == .user ? .trailing : .leading,
                 spacing: 6
             ) {
-                Text(message.content.isEmpty && message.status == .streaming ? "思考中…" : message.content)
+                Text(message.content.isEmpty && message.status == .streaming ? "…" : message.content)
                     .font(.body)
                     .lineSpacing(3)
                     .foregroundStyle(message.role == .user ? .white : .primary)
