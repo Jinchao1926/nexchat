@@ -5,6 +5,30 @@ import Testing
 @MainActor
 @Suite("View models")
 struct ViewModelTests {
+    @Test("session store restores persisted session on init")
+    func restorePersistedSession() async throws {
+        let persistence = InMemorySessionPersistence(
+            storedSession: AppSession(user: AppUser(email: "cached@example.com", name: "Cached User", image: nil))
+        )
+
+        let sessionStore = AppSessionStore(persistence: persistence)
+
+        #expect(sessionStore.isAuthenticated)
+        #expect(sessionStore.session?.user.email == "cached@example.com")
+    }
+
+    @Test("session store clears persisted session when logging out")
+    func clearPersistedSession() async throws {
+        let persistence = InMemorySessionPersistence()
+        let sessionStore = AppSessionStore(persistence: persistence)
+        sessionStore.update(session: AppSession(user: AppUser(email: "user@example.com", name: "User", image: nil)))
+
+        sessionStore.clear()
+
+        #expect(sessionStore.isAuthenticated == false)
+        #expect(persistence.storedSession == nil)
+    }
+
     @Test("auth view model signs in and updates session store")
     func authSubmitSuccess() async throws {
         let sessionStore = AppSessionStore()
@@ -62,6 +86,26 @@ struct ViewModelTests {
 
         #expect(viewModel.pendingNavigationConversationID == "12")
         #expect(viewModel.conversations.first?.title == "New chat")
+    }
+
+    @Test("conversation list view model reports authentication failures")
+    func loadConversationsAuthenticationFailure() async throws {
+        var didReceiveAuthenticationFailure = false
+        let service = MockConversationService(
+            fetchHandler: {
+                throw APIError.server(message: "Authentication failed")
+            }
+        )
+        let viewModel = ConversationListViewModel(
+            service: service,
+            onAuthenticationFailure: {
+                didReceiveAuthenticationFailure = true
+            }
+        )
+
+        await viewModel.loadConversations()
+
+        #expect(didReceiveAuthenticationFailure)
     }
 
     @Test("message list view model loads messages for conversation")
@@ -142,6 +186,27 @@ struct ViewModelTests {
         #expect(viewModel.messages[1].status == .completed)
         #expect(viewModel.isSending == false)
         #expect(viewModel.composerText.isEmpty)
+    }
+
+    @Test("message list view model reports authentication failures")
+    func loadMessagesAuthenticationFailure() async throws {
+        var didReceiveAuthenticationFailure = false
+        let service = MockMessageService(
+            fetchHandler: { _ in
+                throw APIError.server(message: "Authentication failed")
+            }
+        )
+        let viewModel = MessageListViewModel(
+            service: service,
+            conversation: .init(id: "42", userID: "u1", title: "Inbox", createdAt: "2026-04-16T09:00:00Z", updatedAt: "2026-04-16T10:00:00Z"),
+            onAuthenticationFailure: {
+                didReceiveAuthenticationFailure = true
+            }
+        )
+
+        await viewModel.loadMessages()
+
+        #expect(didReceiveAuthenticationFailure)
     }
 
     @Test("message list view model keeps failed assistant bubble with inline error")

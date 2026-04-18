@@ -13,15 +13,18 @@ public final class MessageListViewModel: ObservableObject {
 
     private let service: MessageServiceProtocol
     private let onConversationUpsert: ((Conversation) -> Void)?
+    private let onAuthenticationFailure: (() -> Void)?
 
     public init(
         service: MessageServiceProtocol,
         conversation: Conversation,
-        onConversationUpsert: ((Conversation) -> Void)? = nil
+        onConversationUpsert: ((Conversation) -> Void)? = nil,
+        onAuthenticationFailure: (() -> Void)? = nil
     ) {
         self.service = service
         self.conversation = conversation
         self.onConversationUpsert = onConversationUpsert
+        self.onAuthenticationFailure = onAuthenticationFailure
     }
 
     public func loadMessages() async {
@@ -38,6 +41,9 @@ public final class MessageListViewModel: ObservableObject {
             messages = try await service.fetchMessages(conversationID: conversation.id).reversed()
             errorMessage = nil
         } catch {
+            if let apiError = error as? APIError, apiError.isAuthenticationFailure {
+                onAuthenticationFailure?()
+            }
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
@@ -185,6 +191,9 @@ public final class MessageListViewModel: ObservableObject {
             }
         } catch {
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if let apiError = error as? APIError, apiError.isAuthenticationFailure {
+                onAuthenticationFailure?()
+            }
             markAssistantMessageFailed(
                 messageID: activeAssistantMessageID,
                 error: Self.userFacingStreamError(message)

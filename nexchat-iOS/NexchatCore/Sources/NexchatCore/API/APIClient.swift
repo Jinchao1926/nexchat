@@ -29,6 +29,14 @@ public enum APIError: LocalizedError, Equatable, Sendable {
             message
         }
     }
+
+    public var isAuthenticationFailure: Bool {
+        if case let .server(message) = self {
+            return message == "Authentication failed"
+        }
+
+        return false
+    }
 }
 
 private struct ErrorResponse: Decodable {

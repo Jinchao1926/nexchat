@@ -4,14 +4,24 @@ import SwiftUI
 struct ConversationListView: View {
     @StateObject private var viewModel: ConversationListViewModel
     private let messageService: any MessageServiceProtocol
+    @ObservedObject private var sessionStore: AppSessionStore
     @State private var path: [Conversation] = []
 
     init(
         conversationService: any ConversationServiceProtocol,
-        messageService: any MessageServiceProtocol
+        messageService: any MessageServiceProtocol,
+        sessionStore: AppSessionStore
     ) {
-        _viewModel = StateObject(wrappedValue: ConversationListViewModel(service: conversationService))
+        _viewModel = StateObject(
+            wrappedValue: ConversationListViewModel(
+                service: conversationService,
+                onAuthenticationFailure: {
+                    sessionStore.clear()
+                }
+            )
+        )
         self.messageService = messageService
+        self.sessionStore = sessionStore
     }
 
     var body: some View {
@@ -63,6 +73,9 @@ struct ConversationListView: View {
                     conversation: conversation,
                     onConversationUpsert: { updatedConversation in
                         viewModel.upsertConversation(updatedConversation)
+                    },
+                    onAuthenticationFailure: {
+                        sessionStore.clear()
                     }
                 )
             }

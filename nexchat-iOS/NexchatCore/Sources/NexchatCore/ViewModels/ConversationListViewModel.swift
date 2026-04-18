@@ -11,9 +11,14 @@ public final class ConversationListViewModel: ObservableObject {
     @Published public private(set) var pendingNavigationConversationID: String?
 
     private let service: ConversationServiceProtocol
+    private let onAuthenticationFailure: (() -> Void)?
 
-    public init(service: ConversationServiceProtocol) {
+    public init(
+        service: ConversationServiceProtocol,
+        onAuthenticationFailure: (() -> Void)? = nil
+    ) {
         self.service = service
+        self.onAuthenticationFailure = onAuthenticationFailure
     }
 
     public func loadConversations() async {
@@ -24,6 +29,9 @@ public final class ConversationListViewModel: ObservableObject {
             conversations = try await service.fetchConversations()
             errorMessage = nil
         } catch {
+            if let apiError = error as? APIError, apiError.isAuthenticationFailure {
+                onAuthenticationFailure?()
+            }
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
@@ -53,6 +61,9 @@ public final class ConversationListViewModel: ObservableObject {
             pendingNavigationConversationID = conversation.id
             errorMessage = nil
         } catch {
+            if let apiError = error as? APIError, apiError.isAuthenticationFailure {
+                onAuthenticationFailure?()
+            }
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
