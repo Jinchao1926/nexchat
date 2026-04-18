@@ -96,10 +96,22 @@ struct MessageListView: View {
                     }
 
                 if let error = message.error, message.status == .failed {
-                    Label(error, systemImage: "exclamationmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .padding(.horizontal, 6)
+                    HStack(spacing: 8) {
+                        Label(error, systemImage: "exclamationmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+
+                        if viewModel.canRetryAssistantMessage(message) {
+                            Button("重试") {
+                                Task {
+                                    await viewModel.retryLastFailedAssistantMessage()
+                                }
+                            }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.blue)
+                        }
+                    }
+                    .padding(.horizontal, 6)
                 }
             }
             .id(message.id)

@@ -83,6 +83,47 @@ public final class MessageListViewModel: ObservableObject {
         messages.append(userMessage)
         messages.append(assistantMessage)
 
+        await streamAssistantReply(
+            content: content,
+            pendingUserMessageID: userMessage.id,
+            pendingAssistantMessageID: assistantMessage.id
+        )
+    }
+
+    public func retryLastFailedAssistantMessage() async {
+        guard !isSending,
+              let assistantMessage = messages.last,
+              assistantMessage.role == .assistant,
+              assistantMessage.status == .failed,
+              let userIndex = messages.dropLast().lastIndex(where: { $0.role == .user }) else {
+            return
+        }
+
+        let userMessage = messages[userIndex]
+        isSending = true
+        clearAssistantFailure(messageID: assistantMessage.id)
+
+        await streamAssistantReply(
+            content: userMessage.content,
+            pendingUserMessageID: userMessage.id,
+            pendingAssistantMessageID: assistantMessage.id
+        )
+    }
+
+    public func canRetryAssistantMessage(_ message: ConversationMessage) -> Bool {
+        !isSending &&
+            message.role == .assistant &&
+            message.status == .failed &&
+            message.id == messages.last?.id
+    }
+
+    private func streamAssistantReply(
+        content: String,
+        pendingUserMessageID: String,
+        pendingAssistantMessageID: String
+    ) async {
+        var activeAssistantMessageID = pendingAssistantMessageID
+
         do {
             let stream = try service.streamMessage(
                 content: content,
@@ -95,19 +136,22 @@ public final class MessageListViewModel: ObservableObject {
                     handleStartEvent(
                         conversationID: conversationID,
                         titleSource: content,
+                        pendingUserMessageID: pendingUserMessageID,
                         userMessageID: userMessageID,
+                        pendingAssistantMessageID: activeAssistantMessageID,
                         assistantMessageID: assistantMessageID,
                         provider: provider,
                         model: model
                     )
+                    activeAssistantMessageID = assistantMessageID
                 case let .delta(delta):
-                    updateAssistantMessage { message in
+                    updateMessage(matchingID: activeAssistantMessageID) { message in
                         ConversationMessage(
                             id: message.id,
                             conversationID: message.conversationID,
                             userID: message.userID,
                             role: message.role,
-                            content: message.content + delta,   // Add trunk
+                            content: message.content + delta,
                             status: .streaming,
                             provider: message.provider,
                             model: message.model,
@@ -117,7 +161,7 @@ public final class MessageListViewModel: ObservableObject {
                         )
                     }
                 case let .done(assistantMessageID):
-                    updateAssistantMessage(expectedID: assistantMessageID) { message in
+                    updateMessage(matchingID: assistantMessageID) { message in
                         ConversationMessage(
                             id: message.id,
                             conversationID: message.conversationID,
@@ -133,12 +177,18 @@ public final class MessageListViewModel: ObservableObject {
                         )
                     }
                 case let .error(message):
-                    markAssistantMessageFailed(Self.userFacingStreamError(message))
+                    markAssistantMessageFailed(
+                        messageID: activeAssistantMessageID,
+                        error: Self.userFacingStreamError(message)
+                    )
                 }
             }
         } catch {
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            markAssistantMessageFailed(Self.userFacingStreamError(message))
+            markAssistantMessageFailed(
+                messageID: activeAssistantMessageID,
+                error: Self.userFacingStreamError(message)
+            )
         }
 
         isSending = false
@@ -147,7 +197,9 @@ public final class MessageListViewModel: ObservableObject {
     private func handleStartEvent(
         conversationID: String,
         titleSource: String,
+        pendingUserMessageID: String,
         userMessageID: String,
+        pendingAssistantMessageID: String,
         assistantMessageID: String,
         provider: String,
         model: String
@@ -162,9 +214,8 @@ public final class MessageListViewModel: ObservableObject {
         conversation = updatedConversation
         onConversationUpsert?(updatedConversation)
 
-        if let userIndex = messages.lastIndex(where: { $0.role == .user }) {
-            let message = messages[userIndex]
-            messages[userIndex] = ConversationMessage(
+        updateMessage(matchingID: pendingUserMessageID) { message in
+            ConversationMessage(
                 id: userMessageID,
                 conversationID: conversationID,
                 userID: message.userID,
@@ -179,9 +230,8 @@ public final class MessageListViewModel: ObservableObject {
             )
         }
 
-        if let assistantIndex = messages.lastIndex(where: { $0.role == .assistant }) {
-            let message = messages[assistantIndex]
-            messages[assistantIndex] = ConversationMessage(
+        updateMessage(matchingID: pendingAssistantMessageID) { message in
+            ConversationMessage(
                 id: assistantMessageID,
                 conversationID: conversationID,
                 userID: message.userID,
@@ -197,21 +247,11 @@ public final class MessageListViewModel: ObservableObject {
         }
     }
 
-    private func updateAssistantMessage(
-        expectedID: String? = nil,
+    private func updateMessage(
+        matchingID: String,
         transform: (ConversationMessage) -> ConversationMessage
     ) {
-        guard let index = messages.lastIndex(where: { message in
-            guard message.role == .assistant else {
-                return false
-            }
-
-            guard let expectedID else {
-                return true
-            }
-
-            return message.id == expectedID
-        }) else {
+        guard let index = messages.lastIndex(where: { $0.id == matchingID }) else {
             return
         }
 
@@ -220,8 +260,29 @@ public final class MessageListViewModel: ObservableObject {
         messages[index] = updated
     }
 
-    private func markAssistantMessageFailed(_ error: String) {
-        updateAssistantMessage { message in
+    private func clearAssistantFailure(messageID: String) {
+        updateMessage(matchingID: messageID) { message in
+            ConversationMessage(
+                id: message.id,
+                conversationID: message.conversationID,
+                userID: message.userID,
+                role: message.role,
+                content: "",
+                status: .streaming,
+                provider: message.provider,
+                model: message.model,
+                error: nil,
+                createdAt: message.createdAt,
+                updatedAt: Self.timestampString()
+            )
+        }
+    }
+
+    private func markAssistantMessageFailed(
+        messageID: String,
+        error: String
+    ) {
+        updateMessage(matchingID: messageID) { message in
             ConversationMessage(
                 id: message.id,
                 conversationID: message.conversationID,
@@ -252,6 +313,10 @@ public final class MessageListViewModel: ObservableObject {
 
         if normalized == "fetch failed" || normalized.contains("ollama") {
             return "无法连接 Ollama 服务，请确认 Ollama 已启动后再试。"
+        }
+
+        if normalized == "stream timed out" {
+            return "响应超时，请检查网络连接后重试。"
         }
 
         return message
