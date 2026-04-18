@@ -9,6 +9,7 @@ struct ContentView: View {
         Group {
             if sessionStore.isAuthenticated {
                 MainTabView(
+                    sessionStore: sessionStore,
                     conversationService: dependencies.conversationService,
                     messageService: dependencies.messageService
                 )

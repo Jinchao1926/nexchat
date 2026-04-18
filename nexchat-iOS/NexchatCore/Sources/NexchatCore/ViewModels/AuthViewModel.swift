@@ -57,15 +57,15 @@ public final class AuthViewModel: ObservableObject {
 
     private func validate() -> String? {
         if mode == .signUp && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "Please enter your display name."
+            return "请输入昵称。"
         }
 
         if !email.contains("@") {
-            return "Please enter a valid email."
+            return "请输入正确的邮箱地址。"
         }
 
         if password.count < 6 {
-            return "Password must be at least 6 characters."
+            return "密码至少需要 6 位。"
         }
 
         return nil

@@ -7,13 +7,15 @@ struct MessageListView: View {
     init(
         messageService: any MessageServiceProtocol,
         conversation: Conversation,
-        onConversationUpsert: ((Conversation) -> Void)? = nil
+        onConversationUpsert: ((Conversation) -> Void)? = nil,
+        onAuthenticationFailure: (() -> Void)? = nil
     ) {
         _viewModel = StateObject(
             wrappedValue: MessageListViewModel(
                 service: messageService,
                 conversation: conversation,
-                onConversationUpsert: onConversationUpsert
+                onConversationUpsert: onConversationUpsert,
+                onAuthenticationFailure: onAuthenticationFailure
             )
         )
     }

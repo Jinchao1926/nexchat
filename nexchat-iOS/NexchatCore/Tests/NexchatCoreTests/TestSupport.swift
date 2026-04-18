@@ -112,3 +112,24 @@ struct MockMessageService: MessageServiceProtocol {
         try streamHandler(content, conversationID)
     }
 }
+
+@MainActor
+final class InMemorySessionPersistence: SessionPersistence {
+    var storedSession: AppSession?
+
+    init(storedSession: AppSession? = nil) {
+        self.storedSession = storedSession
+    }
+
+    func loadSession() -> AppSession? {
+        storedSession
+    }
+
+    func save(session: AppSession) {
+        storedSession = session
+    }
+
+    func clearSession() {
+        storedSession = nil
+    }
+}
