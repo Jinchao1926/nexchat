@@ -200,4 +200,67 @@ struct ViewModelTests {
         #expect(viewModel.messages[1].status == .failed)
         #expect(viewModel.messages[1].error == "无法连接 Ollama 服务，请确认 Ollama 已启动后再试。")
     }
+
+    @Test("message list view model retries failed assistant bubble")
+    func retryFailedAssistantMessage() async throws {
+        let attemptCounter = LockedCounter()
+        let service = MockMessageService(
+            streamHandler: { content, conversationID in
+                #expect(content == "hello")
+                #expect(conversationID == "42")
+                let attempt = attemptCounter.incrementAndGet()
+
+                return AsyncThrowingStream { continuation in
+                    if attempt == 1 {
+                        continuation.yield(
+                            .start(
+                                conversationID: "42",
+                                userMessageID: "301",
+                                assistantMessageID: "302",
+                                provider: "ollama",
+                                model: "qwen3"
+                            )
+                        )
+                        continuation.yield(.delta("partial"))
+                        continuation.finish(throwing: APIError.transport(message: "stream failed"))
+                        return
+                    }
+
+                    continuation.yield(
+                        .start(
+                            conversationID: "42",
+                            userMessageID: "401",
+                            assistantMessageID: "402",
+                            provider: "ollama",
+                            model: "qwen3"
+                        )
+                    )
+                    continuation.yield(.delta("complete"))
+                    continuation.yield(.done(assistantMessageID: "402"))
+                    continuation.finish()
+                }
+            }
+        )
+        let viewModel = MessageListViewModel(
+            service: service,
+            conversation: .init(id: "42", userID: "u1", title: "Inbox", createdAt: "2026-04-16T09:00:00Z", updatedAt: "2026-04-16T10:00:00Z")
+        )
+        viewModel.composerText = "hello"
+
+        await viewModel.sendMessage()
+
+        #expect(viewModel.messages.count == 2)
+        #expect(viewModel.messages[1].status == .failed)
+        #expect(viewModel.messages[1].error == "stream failed")
+
+        await viewModel.retryLastFailedAssistantMessage()
+
+        #expect(attemptCounter.value == 2)
+        #expect(viewModel.messages.count == 2)
+        #expect(viewModel.messages[0].id == "401")
+        #expect(viewModel.messages[1].id == "402")
+        #expect(viewModel.messages[1].status == .completed)
+        #expect(viewModel.messages[1].content == "complete")
+        #expect(viewModel.messages[1].error == nil)
+    }
 }

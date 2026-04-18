@@ -146,4 +146,118 @@ struct MessageServiceTests {
             .done(assistantMessageID: "102"),
         ])
     }
+
+    @Test("stream message retries once when stream fails before first event")
+    func streamMessageRetriesBeforeFirstEvent() async throws {
+        let baseURL = URL(string: "http://messages-stream-retry.local/api/v1")!
+        let recorder = RequestRecorder()
+        let attemptCounter = LockedCounter()
+        let client = APIClient(
+            config: APIConfig(baseURL: baseURL),
+            streamTransport: { request in
+                recorder.append(request)
+                let attempt = attemptCounter.incrementAndGet()
+
+                if attempt == 1 {
+                    return AsyncThrowingStream { continuation in
+                        continuation.finish(throwing: APIError.transport(message: "fetch failed"))
+                    }
+                }
+
+                return AsyncThrowingStream { continuation in
+                    continuation.yield("event: start")
+                    continuation.yield(#"data: {"conversationId":42,"userMessageId":101,"assistantMessageId":102,"provider":"ollama","model":"qwen3"}"#)
+                    continuation.yield("")
+                    continuation.yield("event: done")
+                    continuation.yield(#"data: {"assistantMessageId":102}"#)
+                    continuation.yield("")
+                    continuation.finish()
+                }
+            }
+        )
+
+        let service = MessageService(
+            client: client,
+            streamIdleTimeoutNanoseconds: 200_000_000,
+            maxInitialRetryCount: 1,
+            initialRetryDelayNanoseconds: 1_000_000
+        )
+        let stream = try service.streamMessage(content: "你好", conversationID: "42")
+        var events: [MessageStreamEvent] = []
+
+        for try await event in stream {
+            events.append(event)
+        }
+
+        #expect(recorder.requests.count == 2)
+        #expect(events == [
+            .start(
+                conversationID: "42",
+                userMessageID: "101",
+                assistantMessageID: "102",
+                provider: "ollama",
+                model: "qwen3"
+            ),
+            .done(assistantMessageID: "102"),
+        ])
+    }
+
+    @Test("stream message does not retry after receiving delta")
+    func streamMessageDoesNotRetryAfterDelta() async throws {
+        let baseURL = URL(string: "http://messages-stream-no-retry.local/api/v1")!
+        let attemptCounter = LockedCounter()
+        let client = APIClient(
+            config: APIConfig(baseURL: baseURL),
+            streamTransport: { _ in
+                let attempt = attemptCounter.incrementAndGet()
+                return AsyncThrowingStream { continuation in
+                    continuation.yield("event: delta")
+                    continuation.yield(#"data: {"content":"partial"}"#)
+                    continuation.yield("")
+                    continuation.finish(throwing: APIError.transport(message: "stream failed \(attempt)"))
+                }
+            }
+        )
+
+        let service = MessageService(
+            client: client,
+            streamIdleTimeoutNanoseconds: 200_000_000,
+            maxInitialRetryCount: 1,
+            initialRetryDelayNanoseconds: 1_000_000
+        )
+        let stream = try service.streamMessage(content: "你好", conversationID: "42")
+        var events: [MessageStreamEvent] = []
+
+        await #expect(throws: APIError.transport(message: "stream failed 1")) {
+            for try await event in stream {
+                events.append(event)
+            }
+        }
+
+        #expect(events == [.delta("partial")])
+        #expect(attemptCounter.value == 1)
+    }
+
+    @Test("stream message fails when no activity arrives before timeout")
+    func streamMessageTimesOutWhenIdle() async throws {
+        let baseURL = URL(string: "http://messages-stream-timeout.local/api/v1")!
+        let client = APIClient(
+            config: APIConfig(baseURL: baseURL),
+            streamTransport: { _ in
+                AsyncThrowingStream { _ in }
+            }
+        )
+
+        let service = MessageService(
+            client: client,
+            streamIdleTimeoutNanoseconds: 50_000_000,
+            maxInitialRetryCount: 0,
+            initialRetryDelayNanoseconds: 1_000_000
+        )
+        let stream = try service.streamMessage(content: "你好", conversationID: "42")
+
+        await #expect(throws: APIError.transport(message: "Stream timed out")) {
+            for try await _ in stream {}
+        }
+    }
 }
